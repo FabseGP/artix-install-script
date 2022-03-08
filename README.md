@@ -17,6 +17,7 @@ while the following are decided by the user:
 - Choice of init; dinit, openrc or runit
 - Replace 'default' packages - e.g. sudo - with an alternative - e.g. doas
 - Install additional packages
+- Locals and users
 
 
 ## Installation
