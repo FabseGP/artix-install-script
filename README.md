@@ -30,7 +30,7 @@ enable wifi
 scan wifi
 agent on
 services
-connect WIFI_ID
+connect WIFI_ID # connmanctl has tab-completion
 pacman -Sy --noconfirm git
 git clone https://gitlab.com/FabseGP02/artix-install-script.git
 cd artix-install-script
