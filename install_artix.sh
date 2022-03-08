@@ -1108,7 +1108,7 @@ EOF
 }	
  
   SCRIPT_09_BASESTRAP_PACKAGES() {
-    basestrap /mnt $INIT_choice fcron-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
+    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
                    realtime-privileges neovim nano git booster bat bc lz4 zstd efibootmgr bash \
                    base base-devel linux-zen linux-zen-headers linux-firmware grub --ignore mkinitcpio          
     if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
@@ -1270,7 +1270,7 @@ EOF
     if [[ "$INIT_choice" == "dinit" ]]; then
       ln -s /etc/dinit.d/$network_manager /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/$network_backend /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/fcron /etc/dinit.d/boot.d
+      ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
@@ -1278,7 +1278,7 @@ EOF
     elif [[ "$INIT_choice" == "runit" ]]; then
       ln -s /etc/runit/sv/$network_manager /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/$network_backend /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/fcron /etc/runit/runsvdir/default
+      ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
@@ -1286,7 +1286,7 @@ EOF
     elif [[ "$INIT_choice" == "openrc" ]]; then
       rc-update add $network_manager
       rc-update add $network_backend
-      rc-update add fcron 
+      rc-update add cronie 
       rc-update add dhcpcd
       if [[ "$REPLACE_elogind" == "true" ]]; then
         rc-update add seatd
@@ -1379,7 +1379,6 @@ EOF
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
     fi
     echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
-    mkdir -p /etc/cron.{hourly,daily,monthly,yearly}
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       touch /etc/cron.monthly/ssd_health.sh
       cat << EOF | tee -a /etc/cron.monthly/ssd_health.sh > /dev/null    
