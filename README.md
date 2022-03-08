@@ -43,6 +43,7 @@ In no given order:
 
 - [ ] Support for bcachefs once mainlined into linux-kernel
 - [ ] Integration with post-script to fully setup your system
+- [ ] Option to return to the previous submenu; currently only to start of script
 
 
 ## Contributing
