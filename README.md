@@ -13,7 +13,6 @@ while the following are decided by the user:
 
 - LUKS2-encryption of /
     - Due to GRUB-limitations, a prompt for the passphrase will emerge twice
- 
 - Swap-partition
 - Choice of init; dinit, openrc or runit
 - Replace 'default' packages - e.g. sudo - with an alternative - e.g. doas
