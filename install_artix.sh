@@ -993,7 +993,7 @@ EOM
 
   SCRIPT_05_PACMAN_REPOSITORIES() {
     if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
-      pacman -S --noconfirm --needed artix-archlinux-support
+      pacman -Sy --noconfirm --needed artix-archlinux-support
       pacman-key --init
       pacman-key --populate archlinux artix
       if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
