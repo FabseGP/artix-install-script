@@ -1,0 +1,101 @@
+# Answer file for install-script
+# All options can either be set as "true" or "false", unless specific values is specified
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# type of installation
+
+  INTERACTIVE_INSTALL="true" # "true" ignores answerfile and shows prompts during install
+                             # "false" sources answerfile and shows no prompts during install
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# filesystem + encryption
+
+  DRIVE_path="" # Absolute path; e.g. "/dev/nvme0n1" or "/dev/sda"
+  FILESYSTEM_primary_btrfs="true" 
+  FILESYSTEM_primary_bcachefs="" # NOT YET IN KERNEL; LEAVE EMPTY
+  ENCRYPTION_partitions="" # "true" or "false"
+
+# ------ ONLY MODIFY BELOW IF ENCRYPTION_partitions IS "true" ------ 
+
+  ENCRYPTION_passwd="NOT SPECIFIED"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# boot-partition
+
+  DRIVE_path_boot="" # First drive; e.g. "/dev/nvme0n1p1" or "/dev/sda1"
+  BOOT_size="300" # In megabytes; minimum 300 MB is required
+  BOOT_label="NOT SPECIFIED" # Maximum 11 characters with FAT32
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# swap-partition
+
+  SWAP_partition="" # "true" or "false"
+
+# ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
+
+  DRIVE_path_swap="" # Second drive; e.g. "/dev/nvme0n1p2" or "/dev/sda2" 
+  SWAP_size="8000" # In megabytes
+  SWAP_size_allocated="8300" # If SWAP_size is 8000 and BOOT_size is 300
+  SWAP_label="NOT SPECIFIED" 
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# primary-partition
+
+  DRIVE_path_primary="" # If SWAP_partition is true: e.g. "/dev/nvme0n1p3" or "/dev/sda3" 
+                        # If SWAP_partition is false: e.g. "/dev/nvme0n1p2" or "/dev/sda2" 
+  PRIMARY_label="NOT SPECIFIED"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# init-system
+
+  INIT_choice="" # "dinit", "openrc" or "runit"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# replace packages
+
+# ------ TRUE FOR ALL MENTIONED PACKAGES BELOW: ------ 
+ 
+  # These replacements doesn't conflict with their counterparts, which means
+  # that any packages that depends on one of the below mentioned counterparts
+  # will install that counterpart. pacman -Rdd COUNTERPART can be used,
+  # but may results in some programs failing
+
+  REPLACE_networkmanager="" # Replaces it with connman; "true" or "false"
+  REPLACE_sudo="" # Replaces it with doas; "true" or "false"
+  REPLACE_elogind="" # Replaces it with seatd; "true" or "false
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# locals
+
+  TIMEZONE="NOT SPECIFIED" # e.g. "Europe/Copenhagen
+  LANGUAGES_generate="NOT SPECIFIED" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
+  LANGUAGE_system="NOT SPECIFIED"
+  KEYMAP_system="NOT SPECIFIED"
+  HOSTNAME_system="NOT SPECIFIED"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# users
+
+  ROOT_username="root"
+  ROOT_passwd="NOT SPECIFIED" 
+  USERNAME="NOT SPECIFIED"
+  USER_passwd="NOT SPECIFIED"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# miscellaneous
+
+  BOOTLOADER_label="NOT SPECIFIED"
+  PACKAGES_additional="NONE" # Must be space-separated; e.g. "firefox kicad"
+                             # Keep "NONE" as value, if no other packages should be installed, 
+
+#----------------------------------------------------------------------------------------------------------------------------------
