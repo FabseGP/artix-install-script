@@ -34,6 +34,7 @@ connect WIFI_ID
 pacman -Sy --noconfirm git
 git clone https://gitlab.com/FabseGP02/artix-install-script.git
 cd artix-install-script
+chmod u+x install_artix.sh
 ./install_artix.sh # Remember to replace the answerfile, if an automatic install is desired
 ````
 
