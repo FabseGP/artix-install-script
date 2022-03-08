@@ -1310,10 +1310,12 @@ EOF
       rm -r /.snapshots
       snapper --no-dbus -c root create-config /
       cp snapper.conf /etc/snapper/configs/root
+      sed -i "s/USERNAME/$USERNAME/" /etc/snapper/configs/root
       btrfs subvolume delete /.snapshots
       mkdir /.snapshots
       mount -a
-      chmod 750 /.snapshots
+      chmod a+rx /.snapshots
+      chown :users /.snapshots
       cp snap-pac.ini /etc/snap-pac.ini
     fi
 }
