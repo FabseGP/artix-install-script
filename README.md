@@ -26,11 +26,12 @@ If using the official ISO by Artix Linux:
 ```bash
 loadkeys KEYMAP
 connmanctl 
-enable wifi
-scan wifi
-agent on
-services
-connect WIFI_ID # connmanctl has tab-completion
+  enable wifi
+  scan wifi
+  agent on
+  services
+  connect WIFI_ID # connmanctl has tab-completion
+  exit
 pacman -Sy --noconfirm git
 git clone https://gitlab.com/FabseGP02/artix-install-script.git
 cd artix-install-script
