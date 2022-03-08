@@ -472,7 +472,7 @@ EOM
               else
                for ((i=0, j=1; i<${#selected[@]}; i++, j++)); do
                   VALUE=${selected[i]}
-                  CHOICE=${options[i]%%:*}
+                  CHOICE=${options[j]%%:*}
                   export $CHOICE=$VALUE	
                 done
                 PROCEED="true"
