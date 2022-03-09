@@ -8,7 +8,7 @@
   COLUMNS=$(tput cols) 
   BEGINNER_DIR=$(pwd)
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
-  DRIVES=($(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}'))
+  mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -30,7 +30,7 @@
   export DRIVE_path_primary=""
   export BOOT_size="300"
   export BOOT_label="BOOT"
-  export SWAP_size="$(($RAM_size * 1000))"
+  export SWAP_size="$((RAM_size * 1000))"
   export SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
   export SWAP_label="RAM_co"
   export PRIMARY_size="∞"
@@ -85,7 +85,7 @@
   )
 
   # Size of tmpfs (/tmp) 
-  RAM_size_G_half="$(($RAM_size / 2))G" # tmpfs will fill half the RAM-size
+  RAM_size_G_half="$((RAM_size / 2))G" # tmpfs will fill half the RAM-size
 
   # Groups which user is added to 
   export USER_groups="video,audio,seatd,input,power,storage,optical,lp,scanner,dbus,daemon,disk,uucp,wheel,realtime,network"
@@ -439,11 +439,11 @@ EOM
                 toggle_option $active
               fi
             elif [[ "${options[0]}" == "DRIVE_SELECTION" ]]; then
-              DRIVES="$(expr ${#options[@]} - 2)"
+              DRIVES="$((${#options[@]} - 2))"
               COUNT_drive=$(grep -o true <<< "${selected[@]}" | wc -l)
               if [[ "$COUNT_drive" -eq "1" ]]; then
-                for i in $(eval echo {0..$DRIVES}); do
-                  eval selected[$i]=false   	  	
+                for i in $(eval "echo {0..$DRIVES}"); do
+                  eval selected[i]=false   	  	
                 done
                 toggle_option $active	
               else
@@ -470,10 +470,11 @@ EOM
                 echo
                 PRINT_MESSAGE "${messages[6]}"
               else
-               for ((i=0, j=1; i<${#selected[@]}; i++, j++)); do
+                INTRO_choices="$((${#selected[@]} - 1))"
+                for ((i=0, j=1; i<$INTRO_choices; i++, j++)); do
                   VALUE=${selected[i]}
                   CHOICE=${options[j]%%:*}
-                  export $CHOICE=$VALUE	
+                  export $CHOICE=$VALUE
                 done
                 PROCEED="true"
               fi
@@ -484,10 +485,10 @@ EOM
                 echo
                 PRINT_MESSAGE "${messages[8]}"
               else
-                for i in $(eval echo {0..$DRIVES}); do
-                  if [[ "${selected[$i]}" == "true" ]]; then
-                    j=$(($i+1))
-                    PATH_cleaned=$(echo "${options[$j]}" | cut -d'|' -f 1)
+                for i in $(eval "echo {0..$DRIVES}"); do
+                  if [[ "${selected[i]}" == "true" ]]; then
+                    j=$((i+1))
+                    PATH_cleaned=$(echo "${options[j]}" | cut -d'|' -f 1)
                     export "DRIVE_path"="$PATH_cleaned"
                     if [[ "$SWAP_partition" == "true" ]]; then
                       if [[ "$DRIVE_path" == *"nvme"* ]]; then
@@ -1080,7 +1081,7 @@ EOM
 	<description>First snapshot created at installation</description>
 </snapshot>
 EOF
-    btrfs subvolume set-default $(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+') /mnt
+    btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
     btrfs quota enable /mnt
     btrfs qgroup create 1/0 /mnt
     umount /mnt
@@ -1109,8 +1110,8 @@ EOF
  
   SCRIPT_09_BASESTRAP_PACKAGES() {
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
-                   realtime-privileges neovim nano git booster bat bc lz4 zstd efibootmgr bash \
-                   base base-devel linux-zen linux-zen-headers linux-firmware grub --ignore mkinitcpio          
+                   realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
+                   base-devel linux-zen linux-zen-headers linux-firmware --ignore mkinitcpio          
     if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
       basestrap /mnt intel-ucode
     elif grep -q AMD "/proc/cpuinfo"; then
@@ -1130,7 +1131,7 @@ EOF
       basestrap /mnt networkmanager-$INIT_choice wpa_supplicant-$INIT_choice
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      basestrap /mnt grub-btrfs btrfs-progs snapper snap-pac
+      basestrap /mnt grub-btrfs snap-pac
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
       basestrap /mnt bcachefs-tools
     fi
