@@ -9,6 +9,7 @@
   BEGINNER_DIR=$(pwd)
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
   mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
+  export nc=$(grep -c ^processor /proc/cpuinfo)
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -999,6 +1000,8 @@ EOM
       pacman-key --populate archlinux artix
       if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
         cp /install_script/configs/pacman.conf /etc/pacman.conf
+        cp /install_script/configs/makepkg.conf /etc/makepkg.conf
+        sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
       else
         cp configs/pacman.conf /etc/pacman.conf
       fi
@@ -1158,7 +1161,7 @@ tmpfs	/tmp	tmpfs	rw,size=$RAM_size_G_half,nr_inodes=5k,noexec,nodev,nosuid,mode=
 EOF
 }
 
-  SCRIPT_11_CHROOT() {
+  SYSTEM_11_CHROOT() {
     mkdir /mnt/install_script
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
