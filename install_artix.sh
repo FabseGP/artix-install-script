@@ -1088,7 +1088,7 @@ EOF
     btrfs qgroup create 1/0 /mnt
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
-    mkdir -p /mnt/.secret
+    mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
       if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "snapshot" ]]; then
@@ -1326,6 +1326,20 @@ EOF
       chmod a+rx /.snapshots
       chown :wheel /.snapshots
       cp snap-pac.ini /etc/snap-pac.ini
+      cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks
+      cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /.secret
+      touch /etc/pacman.d/hooks/snap-pac-configs.hook
+      cat << EOF | tee -a /etc/pacman.d/hooks/snap-pac-configs.hook > /dev/null
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = snap-pac
+[Action]
+Description = Replaces default snap-pac-hooks...
+When = PostTransaction
+Exec = /bin/sh -c 'cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks'
+EOF
     fi
 }
 
@@ -1335,7 +1349,6 @@ EOF
     cp 10_linux /.secret
     sed -i 's/GRUB_GFXMODE="1024x768,800x600"/GRUB_GFXMODE="auto"/' /etc/default/grub
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/10_linux 
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
@@ -1364,6 +1377,18 @@ EOF
       grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
     fi
+    touch /etc/pacman.d/hooks/grub_booster.hook
+    cat << EOF | tee -a /etc/pacman.d/hooks/grub_booster.hook > /dev/null
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = grub
+[Action]
+Description = Defaults grub-entries to booster-initramfs only...
+When = PostTransaction
+Exec = /bin/sh -c 'cp /.secret/10_linux /etc/grub.d/10_linux'
+EOF
 }
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
@@ -1401,19 +1426,6 @@ EOF
 EOF
       chmod u+x /etc/cron.monthly/ssd_health.sh
     fi
-    mkdir -p /etc/pacman.d/hooks
-    touch /etc/pacman.d/hooks/grub_booster.hook
-    cat << EOF | tee -a /etc/pacman.d/hooks/grub_booster.hook > /dev/null
-[Trigger]
-Operation = Install
-Operation = Upgrade
-Type = Package
-Target = grub
-[Action]
-Description = Defaults grub-entries to booster-initramfs only...
-When = PostTransaction
-Exec = /bin/sh -c 'cp /.secret/10_linux /etc/grub.d/10_linux'
-EOF
 }
 
   SYSTEM_12_CLEANUP() {
