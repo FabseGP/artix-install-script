@@ -1,8 +1,7 @@
 #!/bin/bash
 
-# Static variables / configurable during install
+# DO NOT TOUCH!
 
-  # Static
   set -a # Force export all variables; most relevant for answerfile
   source answerfile
   COLUMNS=$(tput cols) 
@@ -10,50 +9,54 @@
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
   mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
   export nc=$($(grep -c ^processor /proc/cpuinfo) / 2)
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# Configurable variables
+
+  # Choices during install
+  FILESYSTEM_primary_bcachefs=""
+  FILESYSTEM_primary_btrfs=""
+  ENCRYPTION_partitions=""
+  SWAP_partition=""
+  INIT_choice=""
+  REPLACE_networkmanager=""
+  REPLACE_sudo=""
+  REPLACE_elogind=""
+
+  # Drives and partitions + encryption
+  DRIVE_path="" 
+  DRIVE_path_boot=""
+  DRIVE_path_swap=""
+  DRIVE_path_primary=""
+  BOOT_size="300"
+  BOOT_label="BOOT"
+  SWAP_size="$((RAM_size * 1000))"
+  SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
+  SWAP_label="RAM_co"
+  PRIMARY_size="∞"
+  PRIMARY_label="PRIMARY"
+  ENCRYPTION_passwd="NOT CHOSEN"
+
+  # Locals
+  TIMEZONE="Europe/Copenhagen"
+  LANGUAGES_generate="da_DK.UTF-8 en_GB.UTF-8"
+  LANGUAGE_system="en_GB.UTF-8"
+  KEYMAP_system="dk-latin1"
+  HOSTNAME_system="artix"
+
+  # Users
+  ROOT_username="root"
+  ROOT_passwd="NOT CHOSEN"
+  USERNAME="NOT CHOSEN"
+  USER_passwd="NOT CHOSEN"
+
+  # Miscellaneous
+  BOOTLOADER_label="ARTIX_BOOT"
+  PACKAGES_additional="NONE"
   WRONG=""
   PROCEED=""
   CONFIRM=""
-
-  # Choices during install
-  export FILESYSTEM_primary_bcachefs=""
-  export FILESYSTEM_primary_btrfs=""
-  export ENCRYPTION_partitions=""
-  export SWAP_partition=""
-  export INIT_choice=""
-  export REPLACE_networkmanager=""
-  export REPLACE_sudo=""
-  export REPLACE_elogind=""
-
-  # Drives and partitions + encryption
-  export DRIVE_path="" 
-  export DRIVE_path_boot=""
-  export DRIVE_path_swap=""
-  export DRIVE_path_primary=""
-  export BOOT_size="300"
-  export BOOT_label="BOOT"
-  export SWAP_size="$((RAM_size * 1000))"
-  export SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
-  export SWAP_label="RAM_co"
-  export PRIMARY_size="∞"
-  export PRIMARY_label="PRIMARY"
-  export ENCRYPTION_passwd="NOT CHOSEN"
-
-  # Locals
-  export TIMEZONE="Europe/Copenhagen"
-  export LANGUAGES_generate="da_DK.UTF-8 en_GB.UTF-8"
-  export LANGUAGE_system="en_GB.UTF-8"
-  export KEYMAP_system="dk-latin1"
-  export HOSTNAME_system="artix"
-
-  # Users
-  export ROOT_username="root"
-  export ROOT_passwd="NOT CHOSEN"
-  export USERNAME="NOT CHOSEN"
-  export USER_passwd="NOT CHOSEN"
-
-  # Miscellaneous
-  export BOOTLOADER_label="ARTIX_BOOT"
-  export PACKAGES_additional="NONE"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -81,7 +84,7 @@
     "srv"
     ".snapshots"
     "root"
-    "grub" # MUST NOT BE REMOVED
+    "grub"
     "snapshot"
   )
 
@@ -934,15 +937,27 @@ EOM
 # Functions that installs the system
 
   SCRIPT_01_REQUIRED_PACKAGES() {
-    if [[ -z "$(pacman -Qs lolcat)" ]]; then
-      printf "%s" "Installing dependencies "
-      local command="pacman -Sy --noconfirm --needed lolcat figlet parted"
-      $command > /dev/null 2>&1 &
-      while ! [[ $(pacman -Qs lolcat) ]]; do
-        PRINT_PROGRESS_BAR 
-        sleep 1
-      done
-      printf " [%s]\n" "Success!"
+    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
+      pacman -Sy --noconfirm --needed artix-archlinux-support
+      pacman-key --init
+      pacman-key --populate archlinux artix
+      if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
+        cp /install_script/configs/pacman.conf /etc/pacman.conf
+        pacman -Syy 
+      else
+        cp configs/pacman.conf /etc/pacman.conf
+        pacman -Syy 
+        if [[ -z "$(pacman -Qs lolcat)" ]]; then
+          printf "%s" "Installing dependencies "
+          local command="pacman -Sy --noconfirm --needed lolcat figlet parted"
+          $command > /dev/null 2>&1 &
+          while ! [[ $(pacman -Qs lolcat) ]]; do
+            PRINT_PROGRESS_BAR 
+            sleep 1
+          done
+          printf " [%s]\n" "Success!"
+        fi
+      fi
     fi
 }
  
@@ -993,23 +1008,7 @@ EOM
     fi
 }
 
-  SCRIPT_05_PACMAN_REPOSITORIES() {
-    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
-      pacman -Sy --noconfirm --needed artix-archlinux-support
-      pacman-key --init
-      pacman-key --populate archlinux artix
-      if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
-        cp /install_script/configs/pacman.conf /etc/pacman.conf
-        cp /install_script/configs/makepkg.conf /etc/makepkg.conf
-        sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
-      else
-        cp configs/pacman.conf /etc/pacman.conf
-      fi
-      pacman -Syy 
-    fi
-}
-
-  SCRIPT_06_CREATE_PARTITIONS() {
+  SCRIPT_05_CREATE_PARTITIONS() {
     if [[ "$SWAP_partition" == "true" ]]; then
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
@@ -1024,7 +1023,7 @@ EOM
     fi
 }
 
-  SCRIPT_07_FORMAT_AND_ENCRYPT_PARTITIONS() {
+  SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
     if [[ "$SWAP_partition" == "true" ]]; then
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
@@ -1045,7 +1044,7 @@ EOM
     fi
 }
 
-  SCRIPT_08_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
+  SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
     mount -o noatime,compress=zstd "$MOUNTPOINT" /mnt
@@ -1111,42 +1110,46 @@ EOF
     mount "$DRIVE_path_boot" /mnt/boot/efi
 }	
  
-  SCRIPT_09_BASESTRAP_PACKAGES() {
-    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
-                   realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware --ignore mkinitcpio          
+  SCRIPT_08_BASESTRAP_PACKAGES() {         
     if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
-      basestrap /mnt intel-ucode
+      ucode="intel-ucode"
     elif grep -q AMD "/proc/cpuinfo"; then
-      basestrap /mnt amd-ucode
+      ucode="amd-ucode"
     fi
     if [[ "$REPLACE_sudo" == "true" ]]; then
-      basestrap /mnt opendoas
-    fi
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      basestrap /mnt seatd-$INIT_choice pam_rundir polkit
+      su="opendoas"
     else
-      basestrap /mnt elogind-$INIT_choice      
-    fi
-    if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
-    else
-      basestrap /mnt networkmanager-$INIT_choice wpa_supplicant-$INIT_choice
+      su="sudo"
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      basestrap /mnt grub-btrfs snap-pac
-    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-      basestrap /mnt bcachefs-tools
+      filesystem="grub-btrfs snap-pac"
+    else
+      filesystem="bcachefs-tools"
     fi
+    if [[ "$REPLACE_elogind" == "true" ]]; then
+      seat="seatd-$INIT_choice pam_rundir polkit"
+    else
+      seat="elogind-$INIT_choice"     
+    fi
+    if [[ "$REPLACE_networkmanager" == "true" ]]; then
+      network="connman-$INIT_choice connman-gtk iwd-$INIT_choice"
+    else
+      network="networkmanager-$INIT_choice wpa_supplicant-$INIT_choice"
+    fi
+    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
+                   realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
+                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $su $filesystem \
+                   $seat $network --ignore mkinitcpio 
 }
 
-  SCRIPT_10_FSTAB_GENERATION() {
+  SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
     if [[ "$SWAP_partition" == "true" ]]; then
       UUID_swap=$(lsblk -no TYPE,UUID "$DRIVE_path_swap" | awk '$1=="part"{print $2}')
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 swap     UUID=$UUID_swap  /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
+
 EOF
       cat << EOF | tee -a /mnt/etc/fstab > /dev/null
 # /dev/sda2 SWAP
@@ -1161,13 +1164,13 @@ tmpfs	/tmp	tmpfs	rw,size=$RAM_size_G_half,nr_inodes=5k,noexec,nodev,nosuid,mode=
 EOF
 }
 
-  SYSTEM_11_CHROOT() {
+  SCRIPT_10_CHROOT() {
     mkdir /mnt/install_script
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
-      if [[ "${functions[function]}" == "SCRIPT_05_PACMAN_REPOSITORIES" ]]; then
-        export -f "SCRIPT_05_PACMAN_REPOSITORIES"
-        artix-chroot /mnt /bin/bash -c "SCRIPT_05_PACMAN_REPOSITORIES"
+      if [[ "${functions[function]}" == "SCRIPT_01_REQUIRED_PACKAGES" ]]; then
+        export -f "SCRIPT_01_REQUIRED_PACKAGES"
+        artix-chroot /mnt /bin/bash -c "SCRIPT_01_REQUIRED_PACKAGES"
       elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then      
         export -f "${functions[function]}"
         artix-chroot /mnt /bin/bash -c "${functions[function]}"
@@ -1236,6 +1239,8 @@ alias rm='rm -i'
 
 EOF
       cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
+      cp /install_script/configs/makepkg.conf /etc/makepkg.conf
+      sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
 }
 
   SYSTEM_05_SUPERUSER() {
@@ -1415,7 +1420,7 @@ EOF
     rm -rf /install_script
 }
 
-  SCRIPT_12_FAREWELL() {
+  SCRIPT_11_FAREWELL() {
     echo
     PRINT_MESSAGE "${messages[13]}" 
     exit
