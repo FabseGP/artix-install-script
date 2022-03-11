@@ -68,7 +68,7 @@ case x"$GRUB_FS" in
 	rootsubvol="`make_system_path_relative_to_its_root /`"
 	rootsubvol="${rootsubvol#/}"
 	if [ "x${rootsubvol}" != x ]; then
-	    GRUB_CMDLINE_LINUX="rootflags=subvol=${rootsubvol} ${GRUB_CMDLINE_LINUX}"
+	    GRUB_CMDLINE_LINUX="${GRUB_CMDLINE_LINUX}"
 	fi;;
     xzfs)
 	rpool=`${grub_probe} --device ${GRUB_DEVICE} --target=fs_label 2>/dev/null || true`
