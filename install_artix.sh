@@ -92,7 +92,7 @@
   RAM_size_G_half="$((RAM_size / 2))G" # tmpfs will fill half the RAM-size
 
   # Groups which user is added to 
-  export USER_groups="video,audio,seatd,input,power,storage,optical,lp,scanner,dbus,daemon,disk,uucp,wheel,realtime,network"
+  export USER_groups="wheel,users,realtime,video,audio,network,uucp,seatd,input,power,storage,optical,lp,scanner,dbus,daemon,disk"
 
   # Miscellaneous security enhancements 
   export LOGIN_delay="3000000" # Delays initial login with 3 seconds if wrong credentials
@@ -1423,6 +1423,7 @@ EOF
   SCRIPT_11_FAREWELL() {
     echo
     PRINT_MESSAGE "${messages[13]}" 
+    exec env --ignore-environment /bin/bash
     exit
 }
 
