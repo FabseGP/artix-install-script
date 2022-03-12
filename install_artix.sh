@@ -1139,8 +1139,8 @@ EOF
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
                    realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $su $filesystem \
-                   $seat $network --ignore mkinitcpio 
+                   base-devel linux-zen linux-zen-headers linux-firmware "$ucode" "$su" "$seat" \
+                   "$filesystem" "$network" --ignore mkinitcpio 
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
