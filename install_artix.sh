@@ -1126,14 +1126,14 @@ EOF
     else
       su="sudo"
     fi
+    if [[ "$REPLACE_elogind" == "true" ]]; then
+      seat="seatd-$INIT_choice"
+    else
+      seat="elogind-$INIT_choice"
+    fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
                    realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $su --ignore mkinitcpio
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      basestrap /mnt seatd-$INIT_choice pam_rundir
-    else
-      basestrap /mnt elogind-$INIT_choice
-    fi
+                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $seatd $su --ignore mkinitcpio
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
     else
@@ -1144,7 +1144,6 @@ EOF
     else
       basestrap /mnt bcachefs-tools
     fi
-
 }
 
   SCRIPT_10_FSTAB_GENERATION() {
@@ -1335,7 +1334,7 @@ EOF
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz-snap-pac-post.hook
       cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks
       cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /.secret
-      cp hooks/snap-pac-configs.hook /etc/pacman.d/hooks
+      cp hooks/snap-pac-config.hook /etc/pacman.d/hooks
     fi
 }
 
@@ -1384,6 +1383,7 @@ EOF
       pacman -Rns --noconfirm sudo
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
+      pacman -S --noconfirm pam_rundir
       pacman -Rdd --noconfirm elogind    
     fi
 }
