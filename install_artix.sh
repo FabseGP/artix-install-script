@@ -1314,39 +1314,30 @@ EOF
 
   SYSTEM_08_SNAPPER() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cd /install_script/configs || exit
+      cd /install_script || exit
       umount /.snapshots
       rm -r /.snapshots
       snapper --no-dbus -c root create-config /
-      cp snapper.conf /etc/snapper/configs/root
+      cp configs/snapper.conf /etc/snapper/configs/root
       sed -i "s/USERNAME/$USERNAME/" /etc/snapper/configs/root
       btrfs subvolume delete /.snapshots
       mkdir /.snapshots
       mount -a
       chmod a+rx /.snapshots
       chown :wheel /.snapshots
-      cp snap-pac.ini /etc/snap-pac.ini
-      cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks
-      cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /.secret
-      touch /etc/pacman.d/hooks/snap-pac-configs.hook
-      cat << EOF | tee -a /etc/pacman.d/hooks/snap-pac-configs.hook > /dev/null
-[Trigger]
-Operation = Install
-Operation = Upgrade
-Type = Package
-Target = snap-pac
-[Action]
-Description = Replaces default snap-pac-hooks...
-When = PostTransaction
-Exec = /bin/sh -c 'cp {05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks'
-EOF
+      cp configs/snap-pac.ini /etc/snap-pac.ini
+      sed -i 's/INIT/'"$INIT_choice"'/' hooks/05-snap-pac-pre.hook
+      sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz-snap-pac-post.hook
+      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks
+      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /.secret
+      cp hooks/snap-pac-configs.hook /etc/pacman.d/hooks
     fi
 }
 
   SYSTEM_09_BOOTLOADER() {
-    cd /install_script/configs || exit
-    cp 10_linux /etc/grub.d/10_linux
-    cp 10_linux /.secret
+    cd /install_script || exit
+    cp configs/10_linux /etc/grub.d/10_linux
+    cp configs/10_linux /.secret
     sed -i 's/GRUB_GFXMODE="1024x768,800x600"/GRUB_GFXMODE="auto"/' /etc/default/grub
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
@@ -1357,13 +1348,11 @@ EOF
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         touch grub-pre.cfg
         cat << EOF | tee -a grub-pre.cfg > /dev/null
-
 cryptomount -u $UUID_2 
 set root=crypto0
 set prefix=(crypto0)/@/boot/grub
 insmod normal
 normal
-
 EOF
         grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
         cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
@@ -1377,18 +1366,7 @@ EOF
       grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
     fi
-    touch /etc/pacman.d/hooks/grub_booster.hook
-    cat << EOF | tee -a /etc/pacman.d/hooks/grub_booster.hook > /dev/null
-[Trigger]
-Operation = Install
-Operation = Upgrade
-Type = Package
-Target = grub
-[Action]
-Description = Defaults grub-entries to booster-initramfs only...
-When = PostTransaction
-Exec = /bin/sh -c 'cp /.secret/10_linux /etc/grub.d/10_linux'
-EOF
+    cp hooks/grub-booster.hook /etc/pacman.d/hooks
 }
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
