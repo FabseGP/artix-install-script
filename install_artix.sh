@@ -1131,8 +1131,9 @@ EOF
       seat="elogind-$INIT_choice"
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
-                   realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $seatd $su --ignore mkinitcpio
+                   backlight-$INIT_choice realtime-privileges neovim nano git booster bat zstd \
+                   bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
+                   $ucode $seatd $su --ignore mkinitcpio
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
     else
@@ -1286,6 +1287,7 @@ EOF
       ln -s /etc/dinit.d/$network_backend /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
+      ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
       fi
@@ -1294,6 +1296,7 @@ EOF
       ln -s /etc/runit/sv/$network_backend /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
+      ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
       fi
@@ -1302,6 +1305,7 @@ EOF
       rc-update add $network_backend
       rc-update add cronie 
       rc-update add dhcpcd
+      rc-update add backlight
       if [[ "$REPLACE_elogind" == "true" ]]; then
         rc-update add seatd
       fi
