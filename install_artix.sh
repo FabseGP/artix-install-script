@@ -938,27 +938,15 @@ EOM
 # Functions that installs the system
 
   SCRIPT_01_REQUIRED_PACKAGES() {
-    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
-      pacman -Sy --noconfirm --needed artix-archlinux-support
-      pacman-key --init
-      pacman-key --populate archlinux artix
-      if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
-        cp /install_script/configs/pacman.conf /etc/pacman.conf
-        pacman -Syy 
-      else
-        cp configs/pacman.conf /etc/pacman.conf
-        pacman -Syy 
-        if [[ -z "$(pacman -Qs lolcat)" ]]; then
-          printf "%s" "Installing dependencies "
-          local command="pacman -Sy --noconfirm --needed lolcat figlet parted"
-          $command > /dev/null 2>&1 &
-          while ! [[ $(pacman -Qs lolcat) ]]; do
-            PRINT_PROGRESS_BAR 
-            sleep 1
-          done
-          printf " [%s]\n" "Success!"
-        fi
-      fi
+    if [[ -z "$(pacman -Qs lolcat)" ]]; then
+      printf "%s" "Installing dependencies "
+      local command="pacman -Sy --noconfirm --needed lolcat figlet parted"
+      $command > /dev/null 2>&1 &
+      while ! [[ $(pacman -Qs lolcat) ]]; do
+        PRINT_PROGRESS_BAR 
+        sleep 1
+      done
+      printf " [%s]\n" "Success!"
     fi
 }
  
@@ -1009,7 +997,24 @@ EOM
     fi
 }
 
-  SCRIPT_05_CREATE_PARTITIONS() {
+  SCRIPT_05_REPOSITORIES() {
+    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
+      pacman -Sy --noconfirm --needed artix-archlinux-support
+      pacman-key --init
+      pacman-key --populate archlinux artix
+      if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
+        cp /install_script/configs/pacman.conf /etc/pacman.conf
+        pacman -Syy 
+      else
+        cp configs/pacman.conf /etc/pacman.conf
+        pacman -Syy 
+      fi
+    fi
+}
+
+
+
+  SCRIPT_06_CREATE_PARTITIONS() {
     if [[ "$SWAP_partition" == "true" ]]; then
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
@@ -1024,7 +1029,7 @@ EOM
     fi
 }
 
-  SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
+  SCRIPT_07_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
     if [[ "$SWAP_partition" == "true" ]]; then
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
@@ -1045,7 +1050,7 @@ EOM
     fi
 }
 
-  SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
+  SCRIPT_08_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
     mount -o noatime,compress=zstd "$MOUNTPOINT" /mnt
@@ -1111,7 +1116,7 @@ EOF
     mount "$DRIVE_path_boot" /mnt/boot/efi
 }	
  
-  SCRIPT_08_BASESTRAP_PACKAGES() {         
+  SCRIPT_09_BASESTRAP_PACKAGES() {         
     if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
       ucode="intel-ucode"
     elif grep -q AMD "/proc/cpuinfo"; then
@@ -1122,28 +1127,28 @@ EOF
     else
       su="sudo"
     fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      filesystem="grub-btrfs snap-pac"
-    else
-      filesystem="bcachefs-tools"
-    fi
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      seat="seatd-$INIT_choice pam_rundir polkit"
-    else
-      seat="elogind-$INIT_choice"     
-    fi
-    if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      network="connman-$INIT_choice connman-gtk iwd-$INIT_choice"
-    else
-      network="networkmanager-$INIT_choice wpa_supplicant-$INIT_choice"
-    fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
                    realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware "$ucode" "$su" "$seat" \
-                   "$filesystem" "$network" --ignore mkinitcpio 
+                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $su --ignore mkinitcpio
+    if [[ "$REPLACE_elogind" == "true" ]]; then
+      basestrap /mnt seatd-$INIT_choice pam_rundir polkit
+    else
+      basestrap /mnt elogind-$INIT_choice
+    fi
+    if [[ "$REPLACE_networkmanager" == "true" ]]; then
+      basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
+    else
+      basestrap /mnt networkmanager-$INIT_choice wpa_supplicant-$INIT_choice
+    fi
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+      basestrap /mnt grub-btrfs snap-pac
+    else
+      basestrap /mnt bcachefs-tools
+    fi
+
 }
 
-  SCRIPT_09_FSTAB_GENERATION() {
+  SCRIPT_10_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
     if [[ "$SWAP_partition" == "true" ]]; then
@@ -1165,13 +1170,13 @@ tmpfs	/tmp	tmpfs	rw,size=$RAM_size_G_half,nr_inodes=5k,noexec,nodev,nosuid,mode=
 EOF
 }
 
-  SCRIPT_10_CHROOT() {
+  SCRIPT_11_CHROOT() {
     mkdir /mnt/install_script
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
-      if [[ "${functions[function]}" == "SCRIPT_01_REQUIRED_PACKAGES" ]]; then
-        export -f "SCRIPT_01_REQUIRED_PACKAGES"
-        artix-chroot /mnt /bin/bash -c "SCRIPT_01_REQUIRED_PACKAGES"
+      if [[ "${functions[function]}" == "SCRIPT_05_REPOSITORIES" ]]; then
+        export -f "SCRIPT_05_REPOSITORIES"
+        artix-chroot /mnt /bin/bash -c "SCRIPT_05_REPOSITORIES"
       elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then      
         export -f "${functions[function]}"
         artix-chroot /mnt /bin/bash -c "${functions[function]}"
@@ -1405,7 +1410,7 @@ EOF
     rm -rf /install_script
 }
 
-  SCRIPT_11_FAREWELL() {
+  SCRIPT_12_FAREWELL() {
     echo
     PRINT_MESSAGE "${messages[13]}" 
     exec env --ignore-environment /bin/bash
