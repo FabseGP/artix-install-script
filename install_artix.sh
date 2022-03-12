@@ -540,7 +540,8 @@ EOM
       cursor_blink_on
       eval $return_value='("${selected[@]}")'
     done
-    PROCEED="false"
+    PROCEED=""
+    WRONG=""
 }
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -1012,8 +1013,6 @@ EOM
     fi
 }
 
-
-
   SCRIPT_06_CREATE_PARTITIONS() {
     if [[ "$SWAP_partition" == "true" ]]; then
       parted --script -a optimal "$DRIVE_path" \
@@ -1131,7 +1130,7 @@ EOF
                    realtime-privileges neovim nano git booster bat bc zstd efibootmgr grub base \
                    base-devel linux-zen linux-zen-headers linux-firmware $ucode $su --ignore mkinitcpio
     if [[ "$REPLACE_elogind" == "true" ]]; then
-      basestrap /mnt seatd-$INIT_choice pam_rundir polkit
+      basestrap /mnt seatd-$INIT_choice pam_rundir
     else
       basestrap /mnt elogind-$INIT_choice
     fi
