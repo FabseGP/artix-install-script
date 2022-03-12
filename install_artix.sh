@@ -8,7 +8,8 @@
   BEGINNER_DIR=$(pwd)
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
   mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
-  export nc=$(($(grep -c ^processor /proc/cpuinfo) / 2))
+  core_count=$(($(grep -c ^processor /proc/cpuinfo) / 2))
+  export nc=$core_count
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
