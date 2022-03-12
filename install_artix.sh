@@ -1133,7 +1133,7 @@ EOF
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
                    backlight-$INIT_choice realtime-privileges neovim nano git booster bat zstd \
                    bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
-                   $ucode $seatd $su --ignore mkinitcpio
+                   $ucode $seat $su --ignore mkinitcpio
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
     else
