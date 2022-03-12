@@ -92,7 +92,7 @@
   RAM_size_G_half="$((RAM_size / 2))G" # tmpfs will fill half the RAM-size
 
   # Groups which user is added to 
-  export USER_groups="wheel,realtime,video,audio,network,uucp,seatd,input,storage,disk,lp,scanner"
+  export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner"
 
   # Miscellaneous security enhancements 
   export LOGIN_delay="3000000" # Delays initial login with 3 seconds if wrong credentials
@@ -1214,6 +1214,9 @@ EOF
   SYSTEM_02_USERS() {
     echo "root:$ROOT_passwd" | chpasswd
     useradd -m -g users -G "$USER_groups" "$USERNAME"
+    if [[ "$REPLACE_elogind" == "true" ]]; then
+      usermod -a -G seatd "$USERNAME"
+    fi
     ( echo "$USER_passwd" ; echo "$USER_passwd" ) | passwd -q "$USERNAME"
 }
 
