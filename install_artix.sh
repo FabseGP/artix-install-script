@@ -9,7 +9,6 @@
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
   mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
   core_count=$(($(grep -c ^processor /proc/cpuinfo) / 2))
-  export nc=$core_count
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -1224,27 +1223,29 @@ EOF
 }
 
   SYSTEM_04_AUR() {
-      cd /install_script/packages || exit
-      PARU="$(ls -- *paru-*)"
-      pacman -U --noconfirm $PARU
-      touch /etc/bash.bashrc
-      cat << EOF | tee -a /etc/bash.bashrc > /dev/null    
+    cd /install_script/packages || exit
+    PARU="$(ls -- *paru-*)"
+    pacman -U --noconfirm $PARU
+    touch /etc/bash.bashrc
+    cat << EOF | tee -a /etc/bash.bashrc > /dev/null    
 # Redirect yay to paru + making rm safer
 alias yay=paru
 alias rm='rm -i'
 
 EOF
-      mkdir -p /home/"$USERNAME"
-      touch /home/"$USERNAME"/.bashrc      
-      cat << EOF | tee -a /home/"$USERNAME"/.bashrc > /dev/null    
+    mkdir -p /home/"$USERNAME"
+    touch /home/"$USERNAME"/.bashrc      
+    cat << EOF | tee -a /home/"$USERNAME"/.bashrc > /dev/null    
 # Redirect yay to paru + making rm safer
 alias yay=paru
 alias rm='rm -i'
 
 EOF
-      cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
-      cp /install_script/configs/makepkg.conf /etc/makepkg.conf
-      sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
+    cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
+    cp /install_script/configs/makepkg.conf /etc/makepkg.conf
+    if [[ "$core_count" -gt 1 ]]; then 
+      sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$core_count\"/g" /etc/makepkg.conf
+    fi
 }
 
   SYSTEM_05_SUPERUSER() {
