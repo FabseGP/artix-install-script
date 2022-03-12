@@ -1372,7 +1372,9 @@ EOF
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
     cd /install_script/packages || exit
     SNAP_grub="$(ls -- *snap-*)"
+    HOOK="$(ls -- *check-*)"
     pacman -U --noconfirm $SNAP_grub
+    pacman -U --noconfirm $HOOK    
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
     fi
@@ -1382,6 +1384,7 @@ EOF
 }
 
   SYSTEM_11_MISCELLANEOUS() {
+    cd /install_script || exit
     cat << EOF | tee -a /etc/pam.d/system-login > /dev/null
 auth optional pam_faildelay.so delay="$LOGIN_delay"
 EOF
@@ -1392,16 +1395,7 @@ EOF
     fi
     echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      touch /etc/cron.monthly/ssd_health.sh
-      cat << EOF | tee -a /etc/cron.monthly/ssd_health.sh > /dev/null    
-#!/bin/sh
-# Perform a btrfs scrub on the root filesystem
-  btrfs scrub start -c 2 -n 7 /
-
-# Perform periodic trim
-  /usr/bin/fstrim -av > /var/log/trim.log || true
-
-EOF
+      cp scripts/ssd_health.sh /etc/cron.monthly
       chmod u+x /etc/cron.monthly/ssd_health.sh
     fi
 }
