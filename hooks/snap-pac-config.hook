@@ -3,6 +3,7 @@ Operation = Install
 Operation = Upgrade
 Type = Package
 Target = snap-pac
+
 [Action]
 Description = Replaces default snap-pac-hooks...
 When = PostTransaction

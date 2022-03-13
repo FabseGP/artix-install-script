@@ -3,6 +3,7 @@ Operation = Install
 Operation = Upgrade
 Type = Package
 Target = grub
+
 [Action]
 Description = Defaults grub-entries to booster-initramfs only...
 When = PostTransaction

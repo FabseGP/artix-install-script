@@ -1485,6 +1485,7 @@ EOF
       cp scripts/ssd_health.sh /etc/cron.monthly
       chmod u+x /etc/cron.monthly/ssd_health.sh
     fi
+    cp hooks/kernel-symlink.hook /etc/pacman.d/hooks
 }
 
   SYSTEM_12_POST_SCRIPT() {
