@@ -1325,7 +1325,7 @@ EOF
       touch /etc/doas.conf
       cat << EOF | tee -a /etc/doas.conf > /dev/null
 permit persist :wheel
-
+permit setenv { XAUTHORITY LANG LC_ALL } :wheel
 EOF
       chown -c root:root /etc/doas.conf
       chmod -c 0400 /etc/doas.conf
@@ -1333,10 +1333,16 @@ EOF
 # Redirect sudo to doas
 alias sudo=doas   
 
+# Adds tab-completion
+complete -cf doas
+
 EOF
       cat << EOF | tee -a /home/"$USERNAME"/.bashrc > /dev/null    
 # Redirect sudo to doas
 alias sudo=doas
+
+# Adds tab-completion
+complete -cf doas
 
 EOF
     else
