@@ -23,6 +23,7 @@
   REPLACE_networkmanager=""
   REPLACE_sudo=""
   REPLACE_elogind=""
+  POST_script=""
 
   # Drives and partitions + encryption
   DRIVE_path="" 
@@ -54,6 +55,8 @@
   # Miscellaneous
   BOOTLOADER_label="ARTIX_BOOT"
   PACKAGES_additional="NONE"
+  POST_install_script="NOT CHOSEN"
+  POST_install_script_path="NOT CHOSEN"
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -179,6 +182,7 @@
     "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman is yet to conflict with NetworkManager"
     "REPLACE_sudo:Replace sudo with doas # NOTICE: doas is yet to conflict with sudo" 
     "REPLACE_elogind:Replace elogind with seatd # NOTICE: seatd is yet to conflict with elogind"
+    "POST_script:Execute post-install script as regular user"
 )
 
   drive_selection=(
@@ -190,7 +194,7 @@
   PARTITIONS_without_swap="VALUE,BOOT-PARTITION (1),PRIMARY-PARTITION (2)"
   LOCALS="VALUE,TIMEZONE (1),LANGUAGES (2),KEYMAP (3),HOSTNAME (4)"
   USERS="VALUE,root (1),personal (2)"
-  MISCELLANEOUS=",BOOTLOADER-ID (1),ADDITIONAL PACKAGES (2)"
+  MISCELLANEOUS=",BOOTLOADER-ID (1),ADDITIONAL PACKAGES (2),POST INSTALL SCRIPT (3)"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -226,7 +230,8 @@ EOM
 
     read -r -d '' OUTPUT_miscellaneous << EOM
 $MISCELLANEOUS
-VALUE:,$BOOTLOADER_label,$PACKAGES_additional
+VALUE:,$BOOTLOADER_label,$PACKAGES_additional,$POST_install_script
+PATH:,,,$POST_install_script_path
 EOM
 }
 
@@ -696,23 +701,63 @@ EOM
 }
 
   PACKAGES_check() {
-    unavailable_packages="0"
-    IFS=","
-    read -ra packages_to_install <<< "$PACKAGES_additional_export"
-    for ((val=0; val<"${#packages_to_install[@]}"; val++)); do 
-      if ! [[ $(pacman -Si "${packages_to_install[$val]}") ]] ; then
-        echo "${packages_to_install[$val]} is not found in repos!"
-        unavailable_packages+=1
+    if ! [[ "$PACKAGES_additional_export" == "NONE" ]]; then
+      unavailable_packages="0"
+      IFS=","
+      read -ra packages_to_install <<< "$PACKAGES_additional_export"
+      for ((val=0; val<"${#packages_to_install[@]}"; val++)); do 
+        if ! [[ $(pacman -Si "${packages_to_install[$val]}") ]] ; then
+          echo "${packages_to_install[$val]} is not found in repos!"
+          unavailable_packages+=1
+        fi
+      done
+      if ! [[ "$unavailable_packages" == "0" ]]; then
+        PRINT_MESSAGE "Illegal packages!"
+      elif [[ "$PACKAGES_additional_export" == "" ]]; then
+        PROCEED="true"
+      else
+        PACKAGES_additional_export_clean=$(echo "$PACKAGES_additional_export" | tr "," " ")
+        export PACKAGES_additional=$PACKAGES_additional_export_clean
+        PROCEED="true"
       fi
-    done
-    if ! [[ "$unavailable_packages" == "0" ]]; then
-      PRINT_MESSAGE "Illegal packages!"
-    elif [[ "$PACKAGES_additional_export" == "" ]]; then
+    elif [[ "$PACKAGES_additional_export" == "NONE" ]]; then   
       PROCEED="true"
-    else
-      PACKAGES_additional_export_clean=$(echo "$PACKAGES_additional_export" | tr "," " ")
-      export PACKAGES_additional=$PACKAGES_additional_export_clean
-      PROCEED="true"
+    fi 
+}
+
+  POST_SCRIPT_check() {
+    if [[ "$1" == "repo" ]]; then
+      if ! [[ "$POST_script_export" == "" ]]; then
+        file="${POST_script_export##*/}"
+        file_clean="${file%%.*}"
+        if [ -f "$file_clean" ]; then
+          wget -q https://$POST_script_export > /dev/null 2>&1
+        fi
+        if [ $? -ne 0 ]; then
+          PRINT_MESSAGE "Invalid git-repo!" 
+        else            
+          export POST_install_script=$POST_script_export
+          PROCEED="true"
+        fi 
+      elif [[ "$POST_script_export" == "" ]]; then
+        PRINT_MESSAGE "No repo specified!"   
+      fi       
+    elif [[ "$1" == "path" ]]; then
+      if ! [[ "$POST_script_path_export" == "" ]]; then
+        if ! [[ -d "test" ]]; then
+          mkdir test
+          git clone -q https://$POST_install_script
+        fi
+        if [ -f "$POST_script_path_export" ]; then
+          export POST_install_script_path=$POST_script_path_export
+          rm -rf test
+          PROCEED="true"
+        else
+          PRINT_MESSAGE "Invalid path to script!"           
+        fi
+      elif [[ "$POST_script_path_export" == "" ]]; then
+        PRINT_MESSAGE "Empty path to script!"   
+      fi
     fi
 }
 
@@ -914,12 +959,27 @@ EOM
                 ;;
               2)
                 until [[ "$PROCEED" == "true" ]]; do
-                  read -rp "Additional packages to install (separated by comma); e.g. \"firefox,kicad\": " PACKAGES_additional_export 
+                  read -rp "Additional packages to install (separated by comma); e.g. \"firefox,kicad\" or \"NONE\": " PACKAGES_additional_export 
                   PACKAGES_check
                 done   
                 PROCEED="false"
                 echo
                 ;;
+              3)
+                if [[ "$POST_script" == "true" ]]; then
+                  until [[ "$PROCEED" == "true" ]]; do
+                    read -rp "Git-repo that contains the script; e.g. \"gitlab.com/FabseGP02/artix-install-script.git\": " POST_script_export
+                    POST_SCRIPT_check repo
+                  done
+                  PROCEED="false"
+                  until [[ "$PROCEED" == "true" ]]; do
+                    read -rp "Path to script within the cloned folder; e.g. \"artix-install-script/install_artix.sh\": " POST_script_path_export
+                    POST_SCRIPT_check path
+                  done
+                  PROCEED="false"
+                  echo
+                fi
+                ;; 
             esac
           done
           echo
@@ -965,11 +1025,15 @@ EOM
 
   SCRIPT_03_CUSTOMIZING() {
     UPDATE_CHOICES
-    MULTISELECT_MENU "${drive_selection[@]}"
     if [[ "$ENCRYPTION_partitions" == "false" ]]; then
       export ENCRYPTION_passwd="IGNORED"
     fi
+    if [[ "$POST_script" == "false" ]]; then
+      export POST_install_script="IGNORED"
+      export POST_install_script_path="IGNORED"
+    fi
     UPDATE_CHOICES
+    MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
     echo
     if [[ "$SWAP_partition" == "true" ]]; then
@@ -985,6 +1049,7 @@ EOM
     PRINT_MESSAGE "${messages[11]}" 
     PRINT_TABLE ',' "$OUTPUT_users"
     CUSTOMIZING_INSTALL USERS
+
     PRINT_MESSAGE "${messages[12]}" 
     PRINT_TABLE ',' "$OUTPUT_miscellaneous"
     CUSTOMIZING_INSTALL MISCELLANEOUS
@@ -1413,7 +1478,13 @@ EOF
     fi
 }
 
-  SYSTEM_12_CLEANUP() {
+  SYSTEM_12_POST_SCRIPT() {
+    if [[ "$POST_script" == "true" ]]; then
+      cd /install_script || exit
+    fi
+}
+
+  SYSTEM_13_CLEANUP() {
     rm -rf /install_script
 }
 
