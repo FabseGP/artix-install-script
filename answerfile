@@ -6,13 +6,14 @@
 # type of installation
 
   INTERACTIVE_INSTALL="true" # "true" ignores answerfile and shows prompts during install
-                             # "false" sources answerfile and shows no prompts during install
+                             # "false" sources answerfile and shows *almost* no prompts during install
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # filesystem + encryption
 
   DRIVE_path="" # Absolute path; e.g. "/dev/nvme0n1" or "/dev/sda"
+                # Or "ASK" if wanted to be prompted before install
   FILESYSTEM_primary_btrfs="true" 
   FILESYSTEM_primary_bcachefs="" # NOT YET IN KERNEL; LEAVE EMPTY
   ENCRYPTION_partitions="" # "true" or "false"
@@ -25,7 +26,6 @@
 
 # boot-partition
 
-  DRIVE_path_boot="" # First drive; e.g. "/dev/nvme0n1p1" or "/dev/sda1"
   BOOT_size="300" # In megabytes; minimum 300 MB is required
   BOOT_label="NOT SPECIFIED" # Maximum 11 characters with FAT32
 
@@ -37,7 +37,6 @@
 
 # ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
 
-  DRIVE_path_swap="" # Second drive; e.g. "/dev/nvme0n1p2" or "/dev/sda2" 
   SWAP_size="8000" # In megabytes
   SWAP_size_allocated="8300" # If SWAP_size is 8000 and BOOT_size is 300
   SWAP_label="NOT SPECIFIED" 
@@ -46,8 +45,6 @@
 
 # primary-partition
 
-  DRIVE_path_primary="" # If SWAP_partition is true: e.g. "/dev/nvme0n1p3" or "/dev/sda3" 
-                        # If SWAP_partition is false: e.g. "/dev/nvme0n1p2" or "/dev/sda2" 
   PRIMARY_label="NOT SPECIFIED"
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -96,6 +93,6 @@
 
   BOOTLOADER_label="NOT SPECIFIED"
   PACKAGES_additional="NONE" # Must be space-separated; e.g. "firefox kicad"
-                             # Keep "NONE" as value, if no other packages should be installed, 
+                             # Keep "NONE" as value, if no other packages should be installed
 
 #----------------------------------------------------------------------------------------------------------------------------------

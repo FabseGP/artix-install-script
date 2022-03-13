@@ -1135,7 +1135,7 @@ EOF
                    bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
                    $ucode $seat $su --ignore mkinitcpio
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      basestrap /mnt connman-$INIT_choice connman-gtk iwd-$INIT_choice
+      basestrap /mnt connman-$INIT_choice iwd-$INIT_choice
     else
       basestrap /mnt networkmanager-$INIT_choice wpa_supplicant-$INIT_choice
     fi
@@ -1430,6 +1430,32 @@ EOF
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # Actual execution of commands
+
+  if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
+    if [[ "$DRIVE_path" == "ASK" ]]; then
+      MULTISELECT_MENU "${drive_selection[@]}"
+    else
+      if [[ "$SWAP_partition" == "true" ]]; then
+        if [[ "$DRIVE_path" == *"nvme"* ]]; then
+          export DRIVE_path_boot=""$DRIVE_path"p1"
+          export DRIVE_path_swap=""$DRIVE_path"p2"
+          export DRIVE_path_primary=""$DRIVE_path"p3"
+        else
+          export DRIVE_path_boot=""$DRIVE_path"1"
+          export DRIVE_path_swap=""$DRIVE_path"2"
+          export DRIVE_path_primary=""$DRIVE_path"3"
+        fi
+      else 
+        if [[ "$DRIVE_path" == *"nvme"* ]]; then
+          export DRIVE_path_boot=""$DRIVE_path"p1"
+          export DRIVE_path_primary=""$DRIVE_path"p2"
+        else
+          export DRIVE_path_boot=""$DRIVE_path"1"
+          export DRIVE_path_primary=""$DRIVE_path"2"
+        fi
+      fi   
+    fi        
+  fi
 
   # Executing functions
   for ((function=0; function < "${#functions[@]}"; function++)); do
