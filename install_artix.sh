@@ -1430,7 +1430,7 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -1451,6 +1451,7 @@ EOF
       :
     fi
     if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
       grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
     fi
@@ -1486,7 +1487,6 @@ EOF
       cp scripts/ssd_health.sh /etc/cron.monthly
       chmod u+x /etc/cron.monthly/ssd_health.sh
     fi
-    cp hooks/kernel-symlink.hook /etc/pacman.d/hooks
 }
 
   SYSTEM_12_POST_SCRIPT() {
