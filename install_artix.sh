@@ -729,8 +729,7 @@ EOM
     if [[ "$1" == "repo" ]]; then
       if ! [[ "$POST_script_export" == "" ]]; then
         file="${POST_script_export##*/}"
-        file_clean="${file%%.*}"
-        if [ -f "$file_clean" ]; then
+        if [ -f "$file" ]; then
           wget -q https://$POST_script_export > /dev/null 2>&1
         fi
         if [ $? -ne 0 ]; then
@@ -1000,7 +999,7 @@ EOM
   SCRIPT_01_REQUIRED_PACKAGES() {
     if [[ -z "$(pacman -Qs lolcat)" ]]; then
       printf "%s" "Installing dependencies "
-      local command="pacman -Sy --noconfirm --needed lolcat figlet parted"
+      local command="pacman -Sy --noconfirm --needed lolcat figlet parted wget"
       $command > /dev/null 2>&1 &
       while ! [[ $(pacman -Qs lolcat) ]]; do
         PRINT_PROGRESS_BAR 
@@ -1240,9 +1239,14 @@ EOF
       if [[ "${functions[function]}" == "SCRIPT_05_REPOSITORIES" ]]; then
         export -f "SCRIPT_05_REPOSITORIES"
         artix-chroot /mnt /bin/bash -c "SCRIPT_05_REPOSITORIES"
-      elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then      
-        export -f "${functions[function]}"
-        artix-chroot /mnt /bin/bash -c "${functions[function]}"
+      elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then
+        if [[ "${functions[function]}" == "SYSTEM_12_POST_SCRIPT" ]]; then
+          export -f "${functions[function]}"
+          artix-chroot /mnt /bin/bash -c "su -l "$USERNAME" -c "${functions[function]}""
+        else
+          export -f "${functions[function]}"
+          artix-chroot /mnt /bin/bash -c "${functions[function]}"
+        fi
       fi
     done
 }
@@ -1480,7 +1484,9 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]]; then
-      cd /install_script || exit
+      git clone https://$POST_install_script
+      chmod u+x "$POST_install_script_path"
+      /$POST_install_script_path
     fi
 }
 
