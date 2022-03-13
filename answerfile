@@ -38,7 +38,7 @@
 # ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
 
   SWAP_size="8000" # In megabytes
-  SWAP_size_allocated="8300" # If SWAP_size is 8000 and BOOT_size is 300
+  SWAP_size_allocated="8300" # If SWAP_size is 8000 MB and BOOT_size is 300 MB
   SWAP_label="NOT SPECIFIED" 
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -94,5 +94,13 @@
   BOOTLOADER_label="NOT SPECIFIED"
   PACKAGES_additional="NONE" # Must be space-separated; e.g. "firefox kicad"
                              # Keep "NONE" as value, if no other packages should be installed
+  POST_script="" # "true": fetches and execute specified script as regular user from an git-repository
+                 # "false": does nothing
+
+# ------ ONLY MODIFY BELOW IF POST_script IS "true" ------ 
+
+  POST_install_script="" # e.g. "https://gitlab.com/FabseGP02/artix-install-script.git"
+  POST_install_script_path="" # Path to script to be executed within the cloned repository
+                              # e.g. "artix-install-script/install_artix.sh"
 
 #----------------------------------------------------------------------------------------------------------------------------------
