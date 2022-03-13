@@ -1240,11 +1240,10 @@ EOF
         export -f "SCRIPT_05_REPOSITORIES"
         artix-chroot /mnt /bin/bash -c "SCRIPT_05_REPOSITORIES"
       elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then
+        export -f "${functions[function]}"
         if [[ "${functions[function]}" == "SYSTEM_12_POST_SCRIPT" ]]; then
-          export -f "${functions[function]}"
           artix-chroot /mnt /bin/bash -c "su -l "$USERNAME" -c "${functions[function]}""
         else
-          export -f "${functions[function]}"
           artix-chroot /mnt /bin/bash -c "${functions[function]}"
         fi
       fi
