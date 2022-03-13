@@ -1242,7 +1242,9 @@ EOF
       elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then
         export -f "${functions[function]}"
         if [[ "${functions[function]}" == "SYSTEM_12_POST_SCRIPT" ]]; then
-          artix-chroot /mnt /bin/bash -c "su -l "$USERNAME" -c "${functions[function]}""
+          if [[ "$POST_script" == "true" ]]; then
+            artix-chroot /mnt /bin/bash -c "su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path""
+          fi
         else
           artix-chroot /mnt /bin/bash -c "${functions[function]}"
         fi
@@ -1466,7 +1468,6 @@ EOF
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
       pacman -S --noconfirm pam_rundir
-      pacman -Rdd --noconfirm elogind    
     fi
 }
 
@@ -1489,11 +1490,7 @@ EOF
 }
 
   SYSTEM_12_POST_SCRIPT() {
-    if [[ "$POST_script" == "true" ]]; then
-      git clone https://$POST_install_script
-      chmod u+x "$POST_install_script_path"
-      /$POST_install_script_path
-    fi
+    :
 }
 
   SYSTEM_13_CLEANUP() {
