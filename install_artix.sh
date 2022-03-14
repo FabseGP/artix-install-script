@@ -1007,6 +1007,8 @@ EOM
       done
       printf " [%s]\n" "Success!"
     fi
+    chmod u+x scripts/repositories.sh
+    scripts/repositories.sh > /dev/null 2>&1 &
 }
  
   SCRIPT_02_CHOICES() {
@@ -1061,22 +1063,7 @@ EOM
     fi
 }
 
-  SCRIPT_05_REPOSITORIES() {
-    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
-      pacman -Sy --noconfirm --needed artix-archlinux-support
-      pacman-key --init
-      pacman-key --populate archlinux artix
-      if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
-        cp /install_script/configs/pacman.conf /etc/pacman.conf
-        pacman -Syy 
-      else
-        cp configs/pacman.conf /etc/pacman.conf
-        pacman -Syy 
-      fi
-    fi
-}
-
-  SCRIPT_06_CREATE_PARTITIONS() {
+  SCRIPT_05_CREATE_PARTITIONS() {
     if [[ "$SWAP_partition" == "true" ]]; then
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
@@ -1091,7 +1078,7 @@ EOM
     fi
 }
 
-  SCRIPT_07_FORMAT_AND_ENCRYPT_PARTITIONS() {
+  SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
     if [[ "$SWAP_partition" == "true" ]]; then
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
@@ -1112,7 +1099,7 @@ EOM
     fi
 }
 
-  SCRIPT_08_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
+  SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
     mount -o noatime,compress=zstd "$MOUNTPOINT" /mnt
@@ -1178,7 +1165,7 @@ EOF
     mount "$DRIVE_path_boot" /mnt/boot/efi
 }	
  
-  SCRIPT_09_BASESTRAP_PACKAGES() {         
+  SCRIPT_08_BASESTRAP_PACKAGES() {         
     if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
       ucode="intel-ucode"
     elif grep -q AMD "/proc/cpuinfo"; then
@@ -1210,7 +1197,7 @@ EOF
     fi
 }
 
-  SCRIPT_10_FSTAB_GENERATION() {
+  SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
     if [[ "$SWAP_partition" == "true" ]]; then
@@ -1232,22 +1219,13 @@ tmpfs	/tmp	tmpfs	rw,size=$RAM_size_G_half,nr_inodes=5k,noexec,nodev,nosuid,mode=
 EOF
 }
 
-  SCRIPT_11_CHROOT() {
+  SCRIPT_10_CHROOT() {
     mkdir /mnt/install_script
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
-      if [[ "${functions[function]}" == "SCRIPT_05_REPOSITORIES" ]]; then
-        export -f "SCRIPT_05_REPOSITORIES"
-        artix-chroot /mnt /bin/bash -c "SCRIPT_05_REPOSITORIES"
-      elif [[ "${functions[function]}" == *"SYSTEM"* ]]; then
+      if [[ "${functions[function]}" == *"SYSTEM"* ]]; then
         export -f "${functions[function]}"
-        if [[ "${functions[function]}" == "SYSTEM_12_POST_SCRIPT" ]]; then
-          if [[ "$POST_script" == "true" ]]; then
-            artix-chroot /mnt /bin/bash -c "su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path""
-          fi
-        else
-          artix-chroot /mnt /bin/bash -c "${functions[function]}"
-        fi
+        artix-chroot /mnt /bin/bash -c "${functions[function]}"
       fi
     done
 }
@@ -1291,6 +1269,8 @@ EOF
 }
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
+    cd /install_script/scripts || exit
+    ./repositories.sh
     if ! [[ "$PACKAGES_additional" == "NONE" ]]; then
       pacman -S --noconfirm --needed "$PACKAGES_additional"
     fi
@@ -1490,14 +1470,14 @@ EOF
 }
 
   SYSTEM_12_POST_SCRIPT() {
-    :
+    su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path"
 }
 
   SYSTEM_13_CLEANUP() {
     rm -rf /install_script
 }
 
-  SCRIPT_12_FAREWELL() {
+  SCRIPT_11_FAREWELL() {
     echo
     PRINT_MESSAGE "${messages[13]}" 
     exec env --ignore-environment /bin/bash
