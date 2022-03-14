@@ -361,8 +361,8 @@ EOM
       }
       options=("$@")
       return_value="result"
+      selected=()
       if ! [[ "$WRONG" == "true" ]]; then
-        selected=()
         if [[ "${options[0]}" == "INTRO" ]]; then
           PRINT_MESSAGE "${messages[2]}" 
           PRINT_MESSAGE "${messages[3]}"
@@ -377,13 +377,17 @@ EOM
           printf "\n"
         done
       else
-        for ((i=0; i<${#options[@]}; i++)); do
-          selected+=("${selected[i]}")
+        if [[ "${options[0]}" == "INTRO" ]]; then
+          selected=("true")
+          printf "\n"
+        fi
+        for ((i=1; i<${#options[@]}; i++)); do
+          selected+=("${values[i]}")
           printf "\n"
         done
       fi
       lastrow=$(get_cursor_row)
-      startrow=$(("$lastrow" - "${#options[@]}"))
+      startrow=$((lastrow - ${#options[@]}))
       trap "cursor_blink_on; stty echo; printf '\n'; exit" 2
       cursor_blink_off
       key_input() { 
@@ -466,6 +470,7 @@ EOM
               export COUNT_init=$(grep -o true <<< "${selected[@]:4:3}" | wc -l)
               export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
               export COUNT_intro="${#selected[@]}"
+              export values=("${selected[@]}")
               if [[ "$COUNT_init" == "0" ]] && [[ "$COUNT_filesystem" == "0" ]]; then
                 WRONG="true"
                 echo
@@ -727,20 +732,26 @@ EOM
 
   POST_SCRIPT_check() {
     if [[ "$1" == "repo" ]]; then
-      if ! [[ "$POST_script_export" == "" ]]; then
-        file="${POST_script_export##*/}"
-        if [ -f "$file" ]; then
-          wget -q https://$POST_script_export > /dev/null 2>&1
-        fi
-        if [ $? -ne 0 ]; then
-          PRINT_MESSAGE "Invalid git-repo!" 
-        else            
-          export POST_install_script=$POST_script_export
-          PROCEED="true"
-        fi 
-      elif [[ "$POST_script_export" == "" ]]; then
-        PRINT_MESSAGE "No repo specified!"   
-      fi       
+      if ! [[ "$POST_script_export" == "NONE" ]]; then
+        if ! [[ "$POST_script_export" == "" ]]; then
+          file="${POST_script_export##*/}"
+          if [ -f "$file" ]; then
+            wget -q https://$POST_script_export > /dev/null 2>&1
+          fi
+          if [ $? -ne 0 ]; then
+            PRINT_MESSAGE "Invalid git-repo!" 
+          else            
+            export POST_install_script=$POST_script_export
+            PROCEED="true"
+          fi 
+        elif [[ "$POST_script_export" == "" ]]; then
+          PRINT_MESSAGE "No repo specified!"   
+        fi   
+      elif [[ "$POST_script_export" == "NONE" ]]; then 
+        export POST_install_script=NONE
+        export POST_install_script_path=NONE
+        PROCEED="true"  
+      fi 
     elif [[ "$1" == "path" ]]; then
       if ! [[ "$POST_script_path_export" == "" ]]; then
         if ! [[ -d "test" ]]; then
@@ -770,25 +781,22 @@ EOM
       echo
       IFS=
       if [[ "$USERNAME_export" == "" ]] && [[ "$1" == "USERS" ]]; then
-        read -rp "Anything to modify? (A|RETURN TO START) " CONFIRM
+        CONFIRM="1,2,3,4"
+      elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd_export" == "" ]] && [[ "$1" == "PARTITIONS_full" || "$1" == "PARTITIONS_without_swap"	 ]]; then
+        if [[ "$SWAP_partition" == "true" ]]; then
+          CONFIRM="3"
+        else
+          CONFIRM="2"
+        fi
+        ENCRYPTION_type_password="true"
+      elif [[ "$POST_script" == "true" ]] && [[ "$POST_script_export" == "" ]] && [[ "$1" == "MISCELLANEOUS" ]]; then
+        CONFIRM="3"
       else
         read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       fi
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
-        if [[ "$1" =~ ^(PARTITIONS_full|PARTITIONS_without_swap)$ ]] && [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd_export" == "" ]]; then
-          PRINT_MESSAGE "YOU HAVEN'T SET AN ENCRYPTION-PASSWORD!"
-          if [[ "$SWAP_partition" == "true" ]]; then
-            PRINT_TABLE ',' "$OUTPUT_partitions_full"
-          else
-            PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
-          fi
-        elif [[ "$1" == "USERS" ]] && [[ "$ROOT_passwd_export" == "" || "$USERNAME_export" == "" ]]; then
-          PRINT_MESSAGE "YOU HAVEN'T CONFIGURED YOUR USERS!"
-          PRINT_TABLE ',' "$OUTPUT_users"
-        else
-          CONFIRM_proceed="true"
-        fi     
+        CONFIRM_proceed="true"
       elif [[ "$CONFIRM" == "RETURN TO START" ]]; then
         ./$(basename $0) restart && exit
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
@@ -827,10 +835,12 @@ EOM
                   PROCEED="false"
                   echo
                 else
-                  until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
-                    LABEL_check
-                  done
+                  if ! [[ "$ENCRYPTION_type_password" == "true" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do
+                      read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
+                      LABEL_check
+                    done
+                  fi
                   PROCEED="false"
                   if [[ "$ENCRYPTION_partitions" == "true" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
@@ -838,23 +848,27 @@ EOM
                       ENCRYPTION_check
                     done
                     PROCEED="false"
+                    ENCRYPTION_type_password=""
                   fi
                 fi
                 ;;
               3)
                 if [[ "$SWAP_partition" == "true" ]]; then
-                  until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
-                    LABEL_check
-                  done
-                fi
-                PROCEED="false"
-                if [[ "$ENCRYPTION_partitions" == "true" ]]; then
-                  until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "Encryption-password: " ENCRYPTION_passwd_export
-                    ENCRYPTION_check
-                  done
+                  if ! [[ "$ENCRYPTION_type_password" == "true" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do
+                      read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
+                      LABEL_check
+                    done
+                  fi
                   PROCEED="false"
+                  if [[ "$ENCRYPTION_partitions" == "true" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do
+                      read -rp "Encryption-password: " ENCRYPTION_passwd_export
+                      ENCRYPTION_check
+                    done
+                    PROCEED="false"
+                    ENCRYPTION_type_password=""
+                  fi
                 fi
                 ;;
             esac
@@ -967,16 +981,18 @@ EOM
               3)
                 if [[ "$POST_script" == "true" ]]; then
                   until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "Git-repo that contains the script; e.g. \"gitlab.com/FabseGP02/artix-install-script.git\": " POST_script_export
+                    read -rp "Git-repo that contains the script; e.g. \"gitlab.com/FabseGP02/artix-install-script.git\" or \"NONE\": " POST_script_export
                     POST_SCRIPT_check repo
                   done
                   PROCEED="false"
-                  until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "Path to script within the cloned folder; e.g. \"artix-install-script/install_artix.sh\": " POST_script_path_export
-                    POST_SCRIPT_check path
-                  done
-                  PROCEED="false"
-                  echo
+                  if ! [[ "$POST_script_export" == "NONE" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do
+                      read -rp "Path to script within the cloned folder; e.g. \"artix-install-script/install_artix.sh\": " POST_script_path_export
+                      POST_SCRIPT_check path
+                    done
+                    PROCEED="false"
+                    echo
+                  fi
                 fi
                 ;; 
             esac
@@ -1050,7 +1066,6 @@ EOM
     PRINT_MESSAGE "${messages[11]}" 
     PRINT_TABLE ',' "$OUTPUT_users"
     CUSTOMIZING_INSTALL USERS
-
     PRINT_MESSAGE "${messages[12]}" 
     PRINT_TABLE ',' "$OUTPUT_miscellaneous"
     CUSTOMIZING_INSTALL MISCELLANEOUS
@@ -1470,7 +1485,9 @@ EOF
 }
 
   SYSTEM_12_POST_SCRIPT() {
-    su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path"
+    if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path"
+    fi
 }
 
   SYSTEM_13_CLEANUP() {
