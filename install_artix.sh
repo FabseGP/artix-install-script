@@ -1206,9 +1206,11 @@ EOF
       seat="elogind-$INIT_choice"
     fi
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      network="connman-$INIT_choice"
+      network_1="connman-$INIT_choice"
+      network_2="nftables-$INIT_choice"
+      network_3="iptables-nft"
     else
-      network="networkmanager-$INIT_choice"
+      network_1="networkmanager-$INIT_choice"
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       filesystem_1="grub-btrfs"
@@ -1217,9 +1219,9 @@ EOF
       filesystem_1="bcachefs-tools"
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice \
-                   backlight-$INIT_choice nftables-$INIT_choice iptables-nft neovim nano git booster zstd bat bc \
-                   realtime-privileges efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
-                   $ucode $seat $su $network $filesystem_1 $filesystem_2 --ignore mkinitcpio
+                   backlight-$INIT_choice neovim nano git booster zstd bat bc realtime-privileges efibootmgr grub \
+                   base base-devel linux-zen linux-zen-headers linux-firmware $ucode $seat $su $network_1 $network_2 \
+                   $network_3 $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1373,9 +1375,11 @@ EOF
       ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/nftables /etc/dinit.d/boot.d
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
+      fi
+      if [[ "$REPLACE_networkmanager" == "true" ]]; then
+        ln -s /etc/dinit.d/nftables /etc/dinit.d/boot.d
       fi
     elif [[ "$INIT_choice" == "runit" ]]; then
       ln -s /etc/runit/sv/$network_manager /etc/runit/runsvdir/default
@@ -1383,9 +1387,11 @@ EOF
       ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/nftables /etc/runit/runsvdir/default
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
+      fi
+      if [[ "$REPLACE_networkmanager" == "true" ]]; then
+        ln -s /etc/runit/sv/nftables /etc/runit/runsvdir/default
       fi
     elif [[ "$INIT_choice" == "openrc" ]]; then
       rc-update add $network_manager
@@ -1393,9 +1399,11 @@ EOF
       rc-update add cronie 
       rc-update add dhcpcd
       rc-update add backlight
-      rc-update add nftables
       if [[ "$REPLACE_elogind" == "true" ]]; then
         rc-update add seatd
+      fi
+      if [[ "$REPLACE_networkmanager" == "true" ]]; then
+        rc-update add nftables
       fi
     fi
 }
