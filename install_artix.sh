@@ -1046,7 +1046,6 @@ EOM
 }
 
   SCRIPT_03_CUSTOMIZING() {
-    UPDATE_CHOICES
     if [[ "$ENCRYPTION_partitions" == "false" ]]; then
       export ENCRYPTION_passwd="IGNORED"
     fi
@@ -1147,9 +1146,14 @@ EOM
           btrfs subvolume create "/mnt/${subvolumes[subvolume]}"
           mkdir -p /mnt/@/{var,boot}
         fi
-        touch /mnt/@/.snapshots/1/info.xml
-        date=$(date +"%Y-%m-%d %H:%M:%S")
-        cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
+        bcachefs subvolume create "${subvolumes[subvolume]}"
+      fi
+    done
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+     touch /mnt/@/.snapshots/1/info.xml
+      date=$(date +"%Y-%m-%d %H:%M:%S")
+      cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
 <?xml version="1.0"?>
 <snapshot>
 <type>single</type>
@@ -1158,12 +1162,9 @@ EOM
 	<description>First snapshot created at installation</description>
 </snapshot>
 EOF
-        btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
-        btrfs quota enable /mnt
-        btrfs qgroup create 1/0 /mnt
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-        bcachefs subvolume create "${subvolumes[subvolume]}"
-      fi
+      btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
+      btrfs quota enable /mnt
+      btrfs qgroup create 1/0 /mnt
     done
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
