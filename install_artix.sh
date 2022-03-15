@@ -485,7 +485,7 @@ EOM
                 PRINT_MESSAGE "${messages[6]}"
               else
                 INTRO_choices="$((${#selected[@]} - 1))"
-                for ((i=0, j=1; i<$INTRO_choices; i++, j++)); do
+                for ((i=0, j=1; i<INTRO_choices; i++, j++)); do
                   VALUE=${selected[i]}
                   CHOICE=${options[j]%%:*}
                   export $CHOICE=$VALUE
@@ -732,13 +732,13 @@ EOM
 
   POST_SCRIPT_check() {
     if [[ "$1" == "repo" ]]; then
-      if ! [[ "$POST_script_export" == "NONE" ]]; then
+      if ! [[ "$POST_script_export" == "SKIP" ]]; then
         if ! [[ "$POST_script_export" == "" ]]; then
           file="${POST_script_export##*/}"
-          if [ -f "$file" ]; then
+          if [[ -f "$file" ]]; then
             wget -q https://$POST_script_export > /dev/null 2>&1
           fi
-          if [ $? -ne 0 ]; then
+          if [[ $? -ne 0 ]]; then
             PRINT_MESSAGE "Invalid git-repo!" 
           else            
             export POST_install_script=$POST_script_export
@@ -747,7 +747,7 @@ EOM
         elif [[ "$POST_script_export" == "" ]]; then
           PRINT_MESSAGE "No repo specified!"   
         fi   
-      elif [[ "$POST_script_export" == "NONE" ]]; then 
+      elif [[ "$POST_script_export" == "SKIP" ]]; then 
         export POST_install_script=NONE
         export POST_install_script_path=NONE
         PROCEED="true"  
@@ -798,7 +798,7 @@ EOM
       if [[ "$CONFIRM" == "N" ]]; then
         CONFIRM_proceed="true"
       elif [[ "$CONFIRM" == "RETURN TO START" ]]; then
-        ./$(basename $0) restart && exit
+        ./$(basename "$0") restart && exit
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
         if [[ "$CONFIRM" == "A" ]]; then
           CONFIRM="1,2,3,4"
@@ -916,7 +916,7 @@ EOM
                 ;;
               4)
                 until [[ "$PROCEED" == "true" ]]; do
-                  read -rp "Name to host (leave empty for default): " HOSTNAME_system_export
+                  read -rp "Systemwide hostname (leave empty for default): " HOSTNAME_system_export
                   HOSTNAME_check
                 done 
                 PROCEED="false"
@@ -981,11 +981,11 @@ EOM
               3)
                 if [[ "$POST_script" == "true" ]]; then
                   until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "Git-repo that contains the script; e.g. \"gitlab.com/FabseGP02/artix-install-script.git\" or \"NONE\": " POST_script_export
+                    read -rp "Git-repo that contains the script; e.g. \"gitlab.com/FabseGP02/artix-install-script.git\" or \"SKIP\": " POST_script_export
                     POST_SCRIPT_check repo
                   done
                   PROCEED="false"
-                  if ! [[ "$POST_script_export" == "NONE" ]]; then
+                  if ! [[ "$POST_script_export" == "SKIP" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
                       read -rp "Path to script within the cloned folder; e.g. \"artix-install-script/install_artix.sh\": " POST_script_path_export
                       POST_SCRIPT_check path
@@ -1024,7 +1024,11 @@ EOM
       printf " [%s]\n" "Success!"
     fi
     chmod u+x scripts/repositories.sh
-    scripts/repositories.sh > /dev/null 2>&1 &
+    if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
+      scripts/repositories.sh > /dev/null 2>&1 &
+    else
+      scripts/repositories.sh
+    fi
 }
  
   SCRIPT_02_CHOICES() {
@@ -1099,18 +1103,22 @@ EOM
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
       swapon "$DRIVE_path_swap"
     fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]] && [[ "$ENCRYPTION_partitions" == "true" ]]; then
-      echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
-      echo "$ENCRYPTION_passwd" | cryptsetup open "$DRIVE_path_primary" cryptroot
-      mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
-      MOUNTPOINT="/dev/mapper/cryptroot"
-    elif [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
-      MOUNTPOINT="$DRIVE_path_primary"
-    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]] && [[ "$ENCRYPTION_partitions" == "true" ]]; then
-      bcachefs format -f --encrypted --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+      if [[ "$ENCRYPTION_partitions" == "true" ]]; then
+        echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
+        echo "$ENCRYPTION_passwd" | cryptsetup open "$DRIVE_path_primary" cryptroot
+        mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
+        MOUNTPOINT="/dev/mapper/cryptroot"
+      else
+        mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
+        MOUNTPOINT="$DRIVE_path_primary"
+      fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-      bcachefs format -f --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"        
+      if [[ "$ENCRYPTION_partitions" == "true" ]]; then
+        bcachefs format -f --encrypted --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"
+      else
+        bcachefs format -f --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"        
+      fi
     fi
 }
 
@@ -1138,13 +1146,9 @@ EOM
           btrfs subvolume create "/mnt/${subvolumes[subvolume]}"
           mkdir -p /mnt/@/{var,boot}
         fi
-      elif [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-        bcachefs subvolume create "${subvolumes[subvolume]}"
-      fi
-    done
-    touch /mnt/@/.snapshots/1/info.xml
-    date=$(date +"%Y-%m-%d %H:%M:%S")
-    cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
+        touch /mnt/@/.snapshots/1/info.xml
+        date=$(date +"%Y-%m-%d %H:%M:%S")
+        cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
 <?xml version="1.0"?>
 <snapshot>
 <type>single</type>
@@ -1153,9 +1157,13 @@ EOM
 	<description>First snapshot created at installation</description>
 </snapshot>
 EOF
-    btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
-    btrfs quota enable /mnt
-    btrfs qgroup create 1/0 /mnt
+        btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
+        btrfs quota enable /mnt
+        btrfs qgroup create 1/0 /mnt
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
+        bcachefs subvolume create "${subvolumes[subvolume]}"
+      fi
+    done
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
@@ -1196,20 +1204,21 @@ EOF
     else
       seat="elogind-$INIT_choice"
     fi
-    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice \
-                   backlight-$INIT_choice realtime-privileges neovim nano git booster bat zstd \
-                   bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
-                   $ucode $seat $su --ignore mkinitcpio
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      basestrap /mnt connman-$INIT_choice iwd-$INIT_choice
+      network="connman-$INIT_choice"
     else
-      basestrap /mnt networkmanager-$INIT_choice wpa_supplicant-$INIT_choice
+      network="networkmanager-$INIT_choice"
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      basestrap /mnt grub-btrfs snap-pac
+      filesystem_1="grub-btrfs"
+      filesystem_2="snap-pac"
     else
-      basestrap /mnt bcachefs-tools
+      filesystem_1="bcachefs-tools"
     fi
+    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice bat \
+                   backlight-$INIT_choice iwd-$INIT_choice realtime-privileges neovim nano git booster \
+                   bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware zstd \
+                   $ucode $seat $su $network $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1351,14 +1360,17 @@ EOF
   SYSTEM_06_SERVICES() {
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       export network_manager="connmand"
-      export network_backend="iwd"
     else
       export network_manager="NetworkManager"
-      export network_backend="wpa_supplicant"
+      touch /etc/NetworkManager/conf.d/wifi_backend.conf
+      cat << EOF | tee -a /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null
+[device]
+wifi.backend=iwd
+EOF
     fi
     if [[ "$INIT_choice" == "dinit" ]]; then
       ln -s /etc/dinit.d/$network_manager /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/$network_backend /etc/dinit.d/boot.d
+      ln -s /etc/dinit.d/iwd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
@@ -1367,7 +1379,7 @@ EOF
       fi
     elif [[ "$INIT_choice" == "runit" ]]; then
       ln -s /etc/runit/sv/$network_manager /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/$network_backend /etc/runit/runsvdir/default
+      ln -s /etc/runit/sv/iwd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
@@ -1376,7 +1388,7 @@ EOF
       fi
     elif [[ "$INIT_choice" == "openrc" ]]; then
       rc-update add $network_manager
-      rc-update add $network_backend
+      rc-update add iwd
       rc-update add cronie 
       rc-update add dhcpcd
       rc-update add backlight
@@ -1537,10 +1549,8 @@ EOF
   # Executing functions
   for ((function=0; function < "${#functions[@]}"; function++)); do
     if [[ "${functions[function]}" == "SCRIPT"* ]]; then
-      if [[ "${functions[function]}" == "SCRIPT_02"* ]] || [[ "${functions[function]}" == "SCRIPT_03"* ]]; then
-        if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
-          "${functions[function]}"
-        fi
+      if [[ "$INTERACTIVE_INSTALL" == "true" ]] && [[ "${functions[function]}" == "SCRIPT_02"* || "${functions[function]}" == "SCRIPT_03"* ]]; then
+        "${functions[function]}"
       else
         "${functions[function]}"
       fi
