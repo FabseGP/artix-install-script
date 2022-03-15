@@ -726,6 +726,7 @@ EOM
         PROCEED="true"
       fi
     elif [[ "$PACKAGES_additional_export" == "NONE" ]]; then   
+      export PACKAGES_additional=$PACKAGES_additional_export
       PROCEED="true"
     fi 
 }
