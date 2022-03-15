@@ -1225,22 +1225,19 @@ EOF
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
     if [[ "$SWAP_partition" == "true" ]]; then
+      position=$(echo "$DRIVE_path_swap" | grep -b -o / | awk 'BEGIN {FS=":"}{print $1}')
+      export DRIVE_path_swap_clean=$(echo '\'"${DRIVE_path_swap:0:4}"'\'"${DRIVE_path_swap:4:${#DRIVE_path_swap}}"'')
+      sed -i '1,/'"$DRIVE_path_swap_clean"' LABEL='"$SWAP_label"'/!d' /mnt/etc/fstab
       UUID_swap=$(lsblk -no TYPE,UUID "$DRIVE_path_swap" | awk '$1=="part"{print $2}')
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 swap     UUID=$UUID_swap  /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
 
 EOF
       cat << EOF | tee -a /mnt/etc/fstab > /dev/null
-# /dev/sda2 SWAP
 /dev/mapper/swap	none	swap	defaults	0	0
 
 EOF
     fi
-    cat << EOF | tee -a /mnt/etc/fstab > /dev/null
-# Temporary filesystem
-tmpfs	/tmp	tmpfs	rw,size=$RAM_size_G_half,nr_inodes=5k,noexec,nodev,nosuid,mode=1700	0	0  
-
-EOF
 }
 
   SCRIPT_10_CHROOT() {
@@ -1259,7 +1256,8 @@ EOF
     ln -sf /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
     hwclock --systohc
     # Language(s)
-    IFS=' ' read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
+    IFS=' ' 
+    read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
     for language in "${LANGUAGES_array[@]}"; do
       sed -i '/'"$language"'/s/^#//g' /etc/locale.gen
     done
@@ -1490,6 +1488,10 @@ EOF
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
     fi
     echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
+    touch /etc/tmpfiles.d/tmp.conf
+    cat << EOF | tee -a /etc/tmpfiles.d/tmp.conf > /dev/null
+D! /tmp 1777 root root 0
+EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cp scripts/ssd_health.sh /etc/cron.monthly
       chmod u+x /etc/cron.monthly/ssd_health.sh
