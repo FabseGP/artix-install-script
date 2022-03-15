@@ -1,0 +1,19 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Operation = Remove
+Type = Package
+Target = glibc
+Target = INIT
+Target = booster
+Target = grub
+Target = linux
+Target = linux-lts
+Target = linux-zen
+Target = linux-hardened
+
+[Action]
+Description = Generate GRUB config to let grub-btrfs detect new snapshots
+Depends = grub
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/grub-mkconfig

@@ -1056,7 +1056,6 @@ EOM
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
-    echo
     if [[ "$SWAP_partition" == "true" ]]; then
       PRINT_TABLE ',' "$OUTPUT_partitions_full"
       CUSTOMIZING_INSTALL PARTITIONS_full
@@ -1423,8 +1422,9 @@ EOF
       cp configs/snap-pac.ini /etc/snap-pac.ini
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/05-snap-pac-pre.hook
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz-snap-pac-post.hook
-      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /usr/share/libalpm/hooks
-      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook} /.secret
+      sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz_snap-pac-grub-post.hook
+      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook,zz_snap-pac-grub-post.hook} /usr/share/libalpm/hooks
+      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook,zz_snap-pac-grub-post.hook} /.secret
       cp hooks/snap-pac-config.hook /etc/pacman.d/hooks
     fi
 }
@@ -1467,9 +1467,7 @@ EOF
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
     cd /install_script/packages || exit
-    SNAP_grub="$(ls -- *snap-*)"
     HOOK="$(ls -- *check-*)"
-    pacman -U --noconfirm $SNAP_grub
     pacman -U --noconfirm $HOOK    
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
