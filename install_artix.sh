@@ -1151,7 +1151,7 @@ EOM
       fi
     done
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-     touch /mnt/@/.snapshots/1/info.xml
+      touch /mnt/@/.snapshots/1/info.xml
       date=$(date +"%Y-%m-%d %H:%M:%S")
       cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
 <?xml version="1.0"?>
@@ -1165,7 +1165,7 @@ EOF
       btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
       btrfs quota enable /mnt
       btrfs qgroup create 1/0 /mnt
-    done
+    fi
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
