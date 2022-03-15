@@ -1216,9 +1216,9 @@ EOF
     else
       filesystem_1="bcachefs-tools"
     fi
-    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice bat \
-                   backlight-$INIT_choice iwd-$INIT_choice realtime-privileges neovim nano git booster \
-                   bc efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware zstd \
+    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice \
+                   backlight-$INIT_choice nftables-$INIT_choice iptables-nft neovim nano git booster zstd bat bc \
+                   realtime-privileges efibootmgr grub base base-devel linux-zen linux-zen-headers linux-firmware \
                    $ucode $seat $su $network $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
@@ -1373,6 +1373,7 @@ EOF
       ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
+      ln -s /etc/dinit.d/nftables /etc/dinit.d/boot.d
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
       fi
@@ -1382,6 +1383,7 @@ EOF
       ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
+      ln -s /etc/runit/sv/nftables /etc/runit/runsvdir/default
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
       fi
@@ -1391,6 +1393,7 @@ EOF
       rc-update add cronie 
       rc-update add dhcpcd
       rc-update add backlight
+      rc-update add nftables
       if [[ "$REPLACE_elogind" == "true" ]]; then
         rc-update add seatd
       fi
