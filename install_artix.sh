@@ -1263,18 +1263,32 @@ EOF
     IFS=' ' 
     read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
     for language in "${LANGUAGES_array[@]}"; do
-      sed -i '/'"$language"'/s/^#//g' /etc/locale.gen
+      suffix="$j"
       if [[ "${language:0:2}" == "en" ]]; then
-        declare "srv$j"="${language:0:5}"
+        declare "srv_$suffix"="${language:0:5}"
       else
-        declare "srv$j"="${language:0:2}"
+        declare "srv_$suffix"="${language:0:2}"
       fi 
       let j++
     done
-    languages_shortened="${srv0} ${srv1}"
     locale-gen
     echo "LANG="$LANGUAGE_system"" >> /etc/locale.conf
     echo "LC_ALL="$LANGUAGE_system"" >> /etc/locale.conf
+    for ((i=1; i<$(($j+1)); i++)); do
+      language="srv_$i"
+      language_size="${!language}"
+      if ! [[ "${!language}" == "en_"* ]]; then
+        if [[ "${#language_size}" -eq "2" ]]; then
+          sed -i '33s/$/ !*locale*\/'"${!language}"'*\/*/' /install_script/configs/pacman.conf
+          sed -i '37s/$/ !usr\/share\/*locales\/'"${!language}"'*/' /install_script/configs/pacman.conf
+          sed -i '40s/$/ !*\/'"${!language}"'-*.pak/' /install_script/configs/pacman.conf
+          sed -i '41s/$/ !*\/'"${!language}"'-*.pak/' /install_script/configs/pacman.conf
+        fi
+      elif [[ "${!language}" == "en_"* ]]; then
+        sed -i '40s/$/ !*\/'"${!language}"'-*.pak/' /install_script/configs/pacman.conf
+        sed -i '41s/$/ !*\/'"${!language}"'-*.pak/' /install_script/configs/pacman.conf
+      fi
+    done
     # Keymap
     echo "KEYMAP="$KEYMAP_system"" >> /etc/vconsole.conf
     if [[ "$INIT_choice" == "openrc" ]]; then
