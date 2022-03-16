@@ -1166,7 +1166,7 @@ EOF
       btrfs qgroup create 1/0 /mnt
     fi
     umount /mnt
-    mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
+    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async,nodev,nosuid /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
@@ -1174,13 +1174,13 @@ EOF
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            mount -o noatime,compress=zstd,subvol="@/${subvolumes[subvolume]}",nodatacow "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
-            mount -o noatime,compress=zstd,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
         elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/boot/{efi,grub}
-          mount -o noatime,compress=zstd,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
+          mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
         fi
       fi
     done
@@ -1201,9 +1201,10 @@ EOF
       su="sudo"
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
-      seat="seatd-$INIT_choice"
+      seat_1="seatd-$INIT_choice"
+      seat_2="pam_rundir"
     else
-      seat="elogind-$INIT_choice"
+      seat_1="elogind-$INIT_choice"
     fi
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       network_1="connman-$INIT_choice"
@@ -1219,16 +1220,15 @@ EOF
       filesystem_1="bcachefs-tools"
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice \
-                   backlight-$INIT_choice neovim nano git booster zstd bat bc realtime-privileges efibootmgr grub \
-                   base base-devel linux-zen linux-zen-headers linux-firmware $ucode $seat $su $network_1 $network_2 \
-                   $network_3 $filesystem_1 $filesystem_2 --ignore mkinitcpio
+                   backlight-$INIT_choice neovim git booster zstd bat bc realtime-privileges efibootmgr grub base \
+                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 \
+                   $network_2 $network_3 $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
     if [[ "$SWAP_partition" == "true" ]]; then
-      position=$(echo "$DRIVE_path_swap" | grep -b -o / | awk 'BEGIN {FS=":"}{print $1}')
       export DRIVE_path_swap_clean=$(echo '\'"${DRIVE_path_swap:0:4}"'\'"${DRIVE_path_swap:4:${#DRIVE_path_swap}}"'')
       sed -i '1,/'"$DRIVE_path_swap_clean"' LABEL='"$SWAP_label"'/!d' /mnt/etc/fstab
       UUID_swap=$(lsblk -no TYPE,UUID "$DRIVE_path_swap" | awk '$1=="part"{print $2}')
@@ -1259,11 +1259,19 @@ EOF
     ln -sf /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
     hwclock --systohc
     # Language(s)
+    j=1
     IFS=' ' 
     read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
     for language in "${LANGUAGES_array[@]}"; do
       sed -i '/'"$language"'/s/^#//g' /etc/locale.gen
+      if [[ "${language:0:2}" == "en" ]]; then
+        declare "srv$j"="${language:0:5}"
+      else
+        declare "srv$j"="${language:0:2}"
+      fi 
+      let j++
     done
+    languages_shortened="${srv0} ${srv1}"
     locale-gen
     echo "LANG="$LANGUAGE_system"" >> /etc/locale.conf
     echo "LC_ALL="$LANGUAGE_system"" >> /etc/locale.conf
@@ -1483,8 +1491,8 @@ EOF
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
     fi
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      pacman -S --noconfirm pam_rundir
+    if [[ "$REPLACE_elogind" == "true" ]] && ! [[ "$REPLACE_networkmanager" == "true" ]]; then
+      pacman -Rdd --noconfirm elogind
     fi
 }
 
