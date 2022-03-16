@@ -1176,7 +1176,7 @@ EOF
       btrfs qgroup create 1/0 /mnt
     fi
     umount /mnt
-    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async,nodev /mnt
+    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
