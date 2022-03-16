@@ -181,7 +181,7 @@
     "INIT_choice_dinit:dinit as init" 
     "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman is yet to conflict with NetworkManager"
     "REPLACE_sudo:Replace sudo with doas # NOTICE: doas is yet to conflict with sudo" 
-    "REPLACE_elogind:Replace elogind with seatd # NOTICE: seatd is yet to conflict with elogind"
+    "REPLACE_elogind:Replace elogind with seatd # NOTICE: seatd is yet to conflict with elogind, which NetworkManager depends on"
     "POST_script:Execute post-install script as regular user"
 )
 
