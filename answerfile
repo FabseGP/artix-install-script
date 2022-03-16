@@ -37,7 +37,6 @@
 
 # ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
 
-  SWAP_size="8000" # In megabytes
   SWAP_size_allocated="8300" # If SWAP_size is 8000 MB and BOOT_size is 300 MB
   SWAP_label="NOT SPECIFIED" 
 
