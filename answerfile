@@ -98,7 +98,7 @@
 
 # ------ ONLY MODIFY BELOW IF POST_script IS "true" ------ 
 
-  POST_install_script="" # e.g. "https://gitlab.com/FabseGP02/artix-install-script.git"
+  POST_install_script="" # e.g. "gitlab.com/FabseGP02/artix-install-script.git"
   POST_install_script_path="" # Path to script to be executed within the cloned repository
                               # e.g. "artix-install-script/install_artix.sh"
 
