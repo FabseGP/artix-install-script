@@ -1166,7 +1166,7 @@ EOF
       btrfs qgroup create 1/0 /mnt
     fi
     umount /mnt
-    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async,nodev,nosuid /mnt
+    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async,nodev /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
@@ -1174,13 +1174,13 @@ EOF
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
-            mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,discard=async,nodev,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
         elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/boot/{efi,grub}
-          mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
+          mount -o noatime,compress=zstd,discard=async,nodev,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
         fi
       fi
     done
@@ -1208,8 +1208,7 @@ EOF
     fi
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       network_1="connman-$INIT_choice"
-      network_2="nftables-$INIT_choice"
-      network_3="iptables-nft"
+      network_2="iptables-nft"
     else
       network_1="networkmanager-$INIT_choice"
     fi
@@ -1219,10 +1218,10 @@ EOF
     else
       filesystem_1="bcachefs-tools"
     fi
-    basestrap /mnt $INIT_choice cronie-$INIT_choice dhcpcd-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice \
-                   backlight-$INIT_choice neovim git booster zstd bat bc realtime-privileges efibootmgr grub base \
-                   base-devel linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 \
-                   $network_2 $network_3 $filesystem_1 $filesystem_2 --ignore mkinitcpio
+    basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
+                   neovim git booster zstd bat bc realtime-privileges efibootmgr grub base base-devel linux-zen \
+                   linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 $network_2 $filesystem_1 \
+                   $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1374,37 +1373,25 @@ EOF
       ln -s /etc/dinit.d/$network_manager /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/iwd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/dhcpcd /etc/dinit.d/boot.d
       ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
-      fi
-      if [[ "$REPLACE_networkmanager" == "true" ]]; then
-        ln -s /etc/dinit.d/nftables /etc/dinit.d/boot.d
       fi
     elif [[ "$INIT_choice" == "runit" ]]; then
       ln -s /etc/runit/sv/$network_manager /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/iwd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/dhcpcd /etc/runit/runsvdir/default
       ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
       if [[ "$REPLACE_elogind" == "true" ]]; then
         ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
-      fi
-      if [[ "$REPLACE_networkmanager" == "true" ]]; then
-        ln -s /etc/runit/sv/nftables /etc/runit/runsvdir/default
       fi
     elif [[ "$INIT_choice" == "openrc" ]]; then
       rc-update add $network_manager
       rc-update add iwd
       rc-update add cronie 
-      rc-update add dhcpcd
       rc-update add backlight
       if [[ "$REPLACE_elogind" == "true" ]]; then
         rc-update add seatd
-      fi
-      if [[ "$REPLACE_networkmanager" == "true" ]]; then
-        rc-update add nftables
       fi
     fi
 }
