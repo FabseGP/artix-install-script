@@ -3,7 +3,12 @@
 # DO NOT TOUCH!
 
   set -a # Force export all variables; most relevant for answerfile
-  source answerfile
+  if [[ -f "/.encrypt/.answer_encrypt.txt" ]]; then
+    openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -salt -in /.encrypt/.answer_encrypt.txt -out /.decrypt/.decrypt.txt -pass file:/.nothing/.nothing.txt
+    source /.decrypt/.decrypt.txt
+  else
+    source answerfile
+  fi
   COLUMNS=$(tput cols) 
   BEGINNER_DIR=$(pwd)
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
@@ -105,7 +110,12 @@
 # Source answerfile if conditions is met
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
-    source answerfile 
+    if [[ -f "/.encrypt/.answer_encrypt.txt" ]]; then
+      openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -salt -in /.encrypt/.answer_encrypt.txt -out /.decrypt/.decrypt.txt -pass file:/.nothing/.nothing.txt
+      source /.decrypt/.decrypt.txt
+    else
+      source answerfile
+    fi
   fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
