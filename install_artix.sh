@@ -1506,7 +1506,9 @@ D! /tmp 1777 root root 0
 EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cp scripts/ssd_health.sh /etc/cron.monthly
+      cp scripts/grub-mkconfig /usr/share/libalpm/scripts
       chmod u+x /etc/cron.monthly/ssd_health.sh
+      chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
 }
 
