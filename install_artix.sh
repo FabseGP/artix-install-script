@@ -746,11 +746,10 @@ EOM
       if ! [[ "$POST_script_export" == "SKIP" ]]; then
         if ! [[ "$POST_script_export" == "" ]]; then
           file="${POST_script_export##*/}"
-          if [[ -f "$file" ]]; then
-            wget -q https://$POST_script_export > /dev/null 2>&1
-          fi
+          wget -q https://$POST_script_export > /dev/null 2>&1
           if [[ $? -ne 0 ]]; then
-            PRINT_MESSAGE "Invalid git-repo!" 
+            PRINT_MESSAGE "Invalid git-repo!"
+            rm -rf "$file" 
           else            
             export POST_install_script=$POST_script_export
             export basename=$(basename $POST_script_export)
@@ -764,7 +763,7 @@ EOM
         export POST_install_script=NONE
         export POST_install_script_name=NONE
         PROCEED="true"  
-      fi 
+      fi
     elif [[ "$1" == "path" ]]; then
       if ! [[ "$POST_script_name_export" == "" ]]; then
         if ! [[ -d "test" ]]; then
