@@ -1184,13 +1184,13 @@ EOF
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
             mount -o noatime,compress=zstd,discard=async,nodev,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
         elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/boot/{efi,grub}
-          mount -o noatime,compress=zstd,discard=async,nodev,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
+          mount -o noatime,compress=zstd,discard=async,nodev,noexec,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
         fi
       fi
     done
@@ -1491,6 +1491,8 @@ EOF
     cat << EOF | tee -a /etc/pam.d/system-login > /dev/null
 auth optional pam_faildelay.so delay="$LOGIN_delay"
 EOF
+    sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su
+    sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su-l
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
