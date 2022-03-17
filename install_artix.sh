@@ -61,7 +61,7 @@
   BOOTLOADER_label="ARTIX_BOOT"
   PACKAGES_additional="NONE"
   POST_install_script="NOT CHOSEN"
-  POST_install_script_path="NOT CHOSEN"
+  POST_install_script_name="NOT CHOSEN"
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -241,7 +241,7 @@ EOM
     read -r -d '' OUTPUT_miscellaneous << EOM
 $MISCELLANEOUS
 VALUE:,$BOOTLOADER_label,$PACKAGES_additional,$POST_install_script
-PATH:,,,$POST_install_script_path
+PATH:,,,$POST_install_script_name
 EOM
 }
 
@@ -753,6 +753,8 @@ EOM
             PRINT_MESSAGE "Invalid git-repo!" 
           else            
             export POST_install_script=$POST_script_export
+            export basename=$(basename $POST_script_export)
+            export basename_clean=${basename%.*}
             PROCEED="true"
           fi 
         elif [[ "$POST_script_export" == "" ]]; then
@@ -760,23 +762,23 @@ EOM
         fi   
       elif [[ "$POST_script_export" == "SKIP" ]]; then 
         export POST_install_script=NONE
-        export POST_install_script_path=NONE
+        export POST_install_script_name=NONE
         PROCEED="true"  
       fi 
     elif [[ "$1" == "path" ]]; then
-      if ! [[ "$POST_script_path_export" == "" ]]; then
+      if ! [[ "$POST_script_name_export" == "" ]]; then
         if ! [[ -d "test" ]]; then
           mkdir test
           git clone -q https://$POST_install_script
         fi
-        if [ -f "$POST_script_path_export" ]; then
-          export POST_install_script_path=$POST_script_path_export
+        if [ -f "$basename_clean/$POST_script_name_export" ]; then
+          export POST_install_script_name=$POST_script_name_export
           rm -rf test
           PROCEED="true"
         else
           PRINT_MESSAGE "Invalid path to script!"           
         fi
-      elif [[ "$POST_script_path_export" == "" ]]; then
+      elif [[ "$POST_script_name_export" == "" ]]; then
         PRINT_MESSAGE "Empty path to script!"   
       fi
     fi
@@ -998,7 +1000,7 @@ EOM
                   PROCEED="false"
                   if ! [[ "$POST_script_export" == "SKIP" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
-                      read -rp "Path to script within the cloned folder; e.g. \"artix-install-script/install_artix.sh\": " POST_script_path_export
+                      read -rp "Path to script within the cloned folder; e.g. \"install_artix.sh\": " POST_script_name_export
                       POST_SCRIPT_check path
                     done
                     PROCEED="false"
@@ -1061,7 +1063,7 @@ EOM
     fi
     if [[ "$POST_script" == "false" ]]; then
       export POST_install_script="IGNORED"
-      export POST_install_script_path="IGNORED"
+      export POST_install_script_name="IGNORED"
     fi
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
@@ -1511,7 +1513,7 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; chmod u+x "$POST_install_script_path"; /$POST_install_script_path"
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash -c "$POST_install_script_name""
     fi
 }
 
