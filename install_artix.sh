@@ -1513,7 +1513,7 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash -i "$POST_install_script_name""
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
     fi
 }
 
