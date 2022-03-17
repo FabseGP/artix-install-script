@@ -1342,8 +1342,7 @@ EOF
     if [[ "$REPLACE_sudo" == "true" ]]; then
       touch /etc/doas.conf
       cat << EOF | tee -a /etc/doas.conf > /dev/null
-permit persist :wheel
-permit setenv { XAUTHORITY LANG LC_ALL } :wheel
+permit persist setenv { XAUTHORITY LANG LC_ALL } :wheel
 EOF
       chown -c root:root /etc/doas.conf
       chmod -c 0400 /etc/doas.conf
