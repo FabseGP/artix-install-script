@@ -1231,9 +1231,9 @@ EOF
       filesystem_1="bcachefs-tools"
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
-                   neovim git booster zstd bat bc realtime-privileges efibootmgr grub base base-devel linux-zen \
-                   linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 $network_2 $filesystem_1 \
-                   $filesystem_2 --ignore mkinitcpio
+                   neovim git booster zstd bat bc realtime-privileges efibootmgr grub base base-devel dosfstools \
+                   linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 $network_2 \
+                   $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1513,7 +1513,7 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash -c "$POST_install_script_name""
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash -i "$POST_install_script_name""
     fi
 }
 
