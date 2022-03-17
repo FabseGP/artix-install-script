@@ -1379,31 +1379,17 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    if [[ "$INIT_choice" == "dinit" ]]; then
-      ln -s /etc/dinit.d/$network_manager /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/iwd /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/cronie /etc/dinit.d/boot.d
-      ln -s /etc/dinit.d/backlight /etc/dinit.d/boot.d
-      if [[ "$REPLACE_elogind" == "true" ]]; then
-        ln -s /etc/dinit.d/seatd /etc/dinit.d/boot.d
+    for service in $network_manager iwd cronie backlight seatd; do
+      if [[ "$REPLACE_elogind" == "true" && "$service" == "seatd" ]] || ! [[ "$service" == "seatd" ]]; then
+        if [[ "$INIT_choice" == "dinit" ]]; then
+          ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
+        elif [[ "$INIT_choice" == "runit" ]]; then
+          ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
+        elif [[ "$INIT_choice" == "openrc" ]]; then
+          rc-update add $service
+        fi
       fi
-    elif [[ "$INIT_choice" == "runit" ]]; then
-      ln -s /etc/runit/sv/$network_manager /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/iwd /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/cronie /etc/runit/runsvdir/default
-      ln -s /etc/runit/sv/backlight /etc/runit/runsvdir/default
-      if [[ "$REPLACE_elogind" == "true" ]]; then
-        ln -s /etc/dinit.d/seatd /etc/runit/runsvdir/default
-      fi
-    elif [[ "$INIT_choice" == "openrc" ]]; then
-      rc-update add $network_manager
-      rc-update add iwd
-      rc-update add cronie 
-      rc-update add backlight
-      if [[ "$REPLACE_elogind" == "true" ]]; then
-        rc-update add seatd
-      fi
-    fi
+    done
 }
 
   SYSTEM_07_CRYPTKEY() {
