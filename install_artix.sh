@@ -1512,7 +1512,17 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
+      if [[ "$REPLACE_sudo" == "true" ]]; then
+        echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null
+      else
+        echo "username ALL=(ALL) NOPASSWD: $basename_clean/$POST_install_script_name" | tee -a /etc/sudoers > /dev/null
+      fi
       su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
+      if [[ "$REPLACE_sudo" == "true" ]]; then
+        sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
+      else
+        sed -i "/username ALL=(ALL) NOPASSWD: $basename_clean\/$POST_install_script_name/d" /etc/sudoers
+      fi
     fi
 }
 
