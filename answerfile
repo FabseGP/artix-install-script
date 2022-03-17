@@ -81,7 +81,6 @@
 
 # users
 
-  ROOT_username="root"
   ROOT_passwd="NOT SPECIFIED" 
   USERNAME="NOT SPECIFIED"
   USER_passwd="NOT SPECIFIED"
