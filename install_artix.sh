@@ -43,6 +43,7 @@
   PRIMARY_size="∞"
   PRIMARY_label="PRIMARY"
   ENCRYPTION_passwd="NOT CHOSEN"
+  MOUNTPOINT=""
 
   # Locals
   TIMEZONE="Europe/Copenhagen"
@@ -752,7 +753,7 @@ EOM
             rm -rf "$file" 
           else            
             export POST_install_script=$POST_script_export
-            export basename=$(basename $POST_script_export)
+            export basename=$(basename $POST_install_script)
             export basename_clean=${basename%.*}
             PROCEED="true"
           fi 
@@ -1185,19 +1186,23 @@ EOF
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            mount -o noatime,compress=zstd,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+          elif [[ "${subvolumes[subvolume]}" == "home" ]]; then
+            mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/home" "$MOUNTPOINT" /mnt/home
+          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]]; then
+            mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
-            mount -o noatime,compress=zstd,discard=async,nodev,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
         elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/boot/{efi,grub}
-          mount -o noatime,compress=zstd,discard=async,nodev,noexec,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
+          mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
         fi
       fi
     done
     sync
     cd "$BEGINNER_DIR" || exit
-    mount "$DRIVE_path_boot" /mnt/boot/efi
+    mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
@@ -1231,8 +1236,8 @@ EOF
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    neovim git booster zstd bat bc realtime-privileges efibootmgr grub base base-devel dosfstools \
-                   linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 $network_2 \
-                   $filesystem_1 $filesystem_2 --ignore mkinitcpio
+                   pacman-contrib linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 \
+                   $network_2 $filesystem_1 $filesystem_2 --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1461,9 +1466,7 @@ EOF
 }
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
-    cd /install_script/packages || exit
-    HOOK="$(ls -- *check-*)"
-    pacman -U --noconfirm $HOOK    
+    cd /install_script/packages || exit   
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
     fi
@@ -1477,27 +1480,34 @@ EOF
     cat << EOF | tee -a /etc/pam.d/system-login > /dev/null
 auth optional pam_faildelay.so delay="$LOGIN_delay"
 EOF
+    sed -i 's/nullok//g' /etc/pam.d/system-auth
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su-l
+    echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
+    cp hooks/{check-broken-packages.hook,pacman-cache-cleanup.hook} /usr/share/libalpm/hooks
+    cp scripts/check-broken-packages /usr/bin
+    chmod 755 /usr/bin/check-broken-packages
+    touch /etc/tmpfiles.d/tmp.conf
+    cat << EOF | tee -a /etc/tmpfiles.d/tmp.conf > /dev/null
+D! /tmp 1777 root root 0
+EOF
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
     fi
-    echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
-    touch /etc/tmpfiles.d/tmp.conf
-    cat << EOF | tee -a /etc/tmpfiles.d/tmp.conf > /dev/null
-D! /tmp 1777 root root 0
-EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cp scripts/ssd_health.sh /etc/cron.monthly
       cp scripts/grub-mkconfig /usr/share/libalpm/scripts
       chmod u+x /etc/cron.monthly/ssd_health.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
+
 }
 
   SYSTEM_12_POST_SCRIPT() {
+    export basename=$(basename $POST_install_script)
+    export basename_clean=${basename%.*}
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
       if [[ "$REPLACE_sudo" == "true" ]]; then
         echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null
