@@ -16,6 +16,6 @@ Target = linux-hardened
 Description = Performing snapper pre snapshots for the following configurations...
 Depends = snap-pac
 When = PreTransaction
-Exec = /usr/share/libalpm/scripts/snap-pac pre
+Exec = /bin/sh -c '/usr/share/libalpm/scripts/snap-pac pre && /usr/bin/pacman -Qqe  --native > /etc/packages-list-native.txt && /usr/bin/pacman -Qqe --foreign > /etc/packages-list-foreign.txt'
 NeedsTargets
 AbortOnFail
