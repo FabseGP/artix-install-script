@@ -4,7 +4,7 @@ A customizable install-script for Artix Linux that can either be executed intera
 
 By default, the following is set up:
 
-- BTRFS-subvolumes with support for snapshots; taken pre and post system-update
+- BTRFS-subvolumes with support for snapshots; taken pre and post kernel- or grub-update
 - Paru as AUR-helper
 - GRUB as bootloader
 - Arch-repositories enabled
@@ -15,8 +15,12 @@ while the following are decided by the user:
     - Due to GRUB-limitations, a prompt for the passphrase will emerge twice
 - Swap-partition
 - Choice of init; dinit, openrc or runit
-- Replace 'default' packages - e.g. sudo - with an alternative - e.g. doas
+- Replacing the following packages with alternatives:
+    - Replace elogind with seatd
+    - Replace networkmanager with connman
+    - Replace sudo with doas
 - Install additional packages
+- Execute custom script after install as regular user
 - Locals and users
 
 
@@ -44,7 +48,7 @@ chmod u+x install_artix.sh
 In no given order:
 
 - [ ] Support for bcachefs once mainlined into linux-kernel
-- [ ] Integration with post-script to fully setup your system
+- [X] Integration with post-script to fully setup your system
 - [ ] Option to return to the previous submenu; currently only to start of script
 
 
