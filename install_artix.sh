@@ -1036,11 +1036,13 @@ EOM
       done
       printf " [%s]\n" "Success!"
     fi
-    chmod u+x scripts/repositories.sh
-    if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
-      scripts/repositories.sh > /dev/null 2>&1 &
-    else
-      scripts/repositories.sh
+    if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
+      chmod u+x scripts/repositories.sh
+      if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
+        scripts/repositories.sh > /dev/null 2>&1 &
+      else
+        scripts/repositories.sh
+      fi
     fi
 }
  
