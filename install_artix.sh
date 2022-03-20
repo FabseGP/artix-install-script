@@ -448,6 +448,7 @@ EOM
         print_options $active
         case $(key_input) in
           space)  
+            print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
               COUNT_init=$(grep -o true <<< "${selected[@]:4:3}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
@@ -457,6 +458,11 @@ EOM
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then
                 eval selected[{0..1}]=false
                 toggle_option $active
+              elif [[ "$active" == "7" ]] && [[ "${selected[7]}" == "true" ]] && [[ "${selected[9]}" == "true" ]]; then
+                eval selected[7]=false
+                eval selected[9]=false
+              elif [[ "$active" == "9" ]] && [[ "${selected[7]}" == "false" ]]; then
+                :
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then
                 :
               else
@@ -1472,8 +1478,11 @@ EOF
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
     fi
-    if [[ "$REPLACE_elogind" == "true" ]] && ! [[ "$REPLACE_networkmanager" == "true" ]]; then
-      pacman -Rdd --noconfirm elogind
+    if [[ "$REPLACE_elogind" == "true" ]]; then
+      ELOGIND="$(ls -- *elogind-*)"
+      POLKIT="$(ls -- *polkit-*)"
+      pacman -U --noconfirm $ELOGIND $POLKIT
+      pacman -Rns --noconfirm elogind
     fi
 }
 
