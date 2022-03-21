@@ -66,7 +66,7 @@
   REPLACE_networkmanager="" # Replaces it with connman; "true" or "false"
   REPLACE_sudo="" # Replaces it with doas; "true" or "false"
   REPLACE_elogind="" # Replaces it with seatd; "true" or "false
-                     # NOTICE: NetworkManager depends on elogind
+                     # NOTICE: an elogind-dummy-package is installed, though NetworkManager requires elogind
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # locals
