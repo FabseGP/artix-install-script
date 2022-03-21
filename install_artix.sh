@@ -190,9 +190,9 @@
     "INIT_choice_runit:runit as init" 
     "INIT_choice_openrc:openrc as init" 
     "INIT_choice_dinit:dinit as init" 
-    "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman is yet to conflict with NetworkManager"
-    "REPLACE_sudo:Replace sudo with doas # NOTICE: doas is yet to conflict with sudo" 
-    "REPLACE_elogind:Replace elogind with seatd # NOTICE: seatd is yet to conflict with elogind, which NetworkManager depends on"
+    "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman doesn't conflict with NetworkManager"
+    "REPLACE_sudo:Replace sudo with doas # NOTICE: doas doesn't conflict with sudo" 
+    "REPLACE_elogind:Replace elogind with seatd # NOTICE: an elogind-dummy-package is installed, though NetworkManager requires elogind"
     "POST_script:Execute post-install script as regular user"
 )
 
@@ -1480,9 +1480,7 @@ EOF
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
       ELOGIND="$(ls -- *elogind-*)"
-      POLKIT="$(ls -- *polkit-*)"
-      pacman -U --noconfirm $ELOGIND $POLKIT
-      pacman -Rns --noconfirm elogind
+      pacman -U --noconfirm $ELOGIND
     fi
 }
 

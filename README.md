@@ -16,7 +16,7 @@ while the following are decided by the user:
 - Swap-partition
 - Choice of init; dinit, openrc or runit
 - Replacing the following packages with alternatives:
-    - Replace elogind with seatd
+    - Replace elogind with seatd; will install an elogind-dummy-package
     - Replace networkmanager with connman
     - Replace sudo with doas
 - Install additional packages
