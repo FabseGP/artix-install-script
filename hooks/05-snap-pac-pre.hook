@@ -11,6 +11,7 @@ Target = linux
 Target = linux-lts
 Target = linux-zen
 Target = linux-hardened
+Target = linux-tkg
 
 [Action]
 Description = Performing snapper pre snapshots for the following configurations...
