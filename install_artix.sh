@@ -192,7 +192,7 @@
     "INIT_choice_dinit:dinit as init" 
     "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman doesn't conflict with NetworkManager"
     "REPLACE_sudo:Replace sudo with doas # NOTICE: doas doesn't conflict with sudo" 
-    "REPLACE_elogind:Replace elogind with seatd # NOTICE: an elogind-dummy-package is installed, though NetworkManager requires elogind"
+    "REPLACE_elogind:Replace elogind with seatd # NOTICE: a elogind-dummy-package is installed, though NetworkManager requires elogind"
     "POST_script:Execute post-install script as regular user"
 )
 
@@ -1186,7 +1186,7 @@ EOF
       btrfs qgroup create 1/0 /mnt
     fi
     umount /mnt
-    mount "$MOUNTPOINT" -o noatime,compress=zstd,discard=async /mnt
+    mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
@@ -1505,10 +1505,14 @@ EOF
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
     fi
+    if [[ "$(lsblk --discard)" ]]; then
+      cp scripts/ssd_trim.sh /etc/cron.weekly
+      chmod u+x /etc/cron.weekly/ssd_trim.sh
+    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cp scripts/ssd_health.sh /etc/cron.monthly
+      cp scripts/btrfs_scrub.sh /etc/cron.monthly
       cp scripts/grub-mkconfig /usr/share/libalpm/scripts
-      chmod u+x /etc/cron.monthly/ssd_health.sh
+      chmod u+x /etc/cron.monthly/btrfs_scrub.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
 
