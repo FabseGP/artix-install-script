@@ -1229,19 +1229,20 @@ EOF
     else
       seat="elogind-$INIT_choice"
     fi
-    basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
-                   chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
-                   pacman-contrib linux-zen linux-zen-headers linux-firmware $su $ucode $seat
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      basestrap /mnt connman-$INIT_choice iptables-nft
+      network="connman-$INIT_choice"
     else
-      basestrap /mnt networkmanager-$INIT_choice
+      network="networkmanager-$INIT_choice"
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      basestrap /mnt grub-btrfs snap-pac
+      filesystem="grub-btrfs"
     else
-      basestrap /mnt bcachefs-tools
+      filesystem="bcachefs-tools"
     fi
+      basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
+                     chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
+                     iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware $su $ucode $seat $network \
+                     $filesystem --ignore mkinitcpio
 
 }
 
@@ -1413,6 +1414,7 @@ EOF
 
   SYSTEM_08_SNAPPER() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+      pacman -S --noconfirm snap-pac
       cd /install_script || exit
       umount /.snapshots
       rm -r /.snapshots
