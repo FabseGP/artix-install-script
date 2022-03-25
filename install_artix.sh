@@ -1395,7 +1395,7 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager iwd cronie backlight seatd chrony; do
+    for service in $network_manager iwd cronie backlight seatd chronyd; do
       if [[ "$REPLACE_elogind" == "true" && "$service" == "seatd" ]] || ! [[ "$service" == "seatd" ]]; then
         if [[ "$INIT_choice" == "dinit" ]]; then
           ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
