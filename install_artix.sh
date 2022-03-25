@@ -1225,30 +1225,24 @@ EOF
       su="sudo"
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
-      seat_1="seatd-$INIT_choice"
-      seat_2="pam_rundir"
+      seat="seatd-$INIT_choice"
     else
-      seat_1="elogind-$INIT_choice"
-    fi
-    if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      network_1="connman-$INIT_choice"
-      network_2="iptables-nft"
-    else
-      network_1="networkmanager-$INIT_choice"
-    fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      filesystem_1="grub-btrfs"
-      filesystem_2="snap-pac"
-    else
-      filesystem_1="bcachefs-tools"
-    fi
-    if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      git="git"
+      seat="elogind-$INIT_choice"
     fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
-                   pacman-contrib linux-zen linux-zen-headers linux-firmware $seat_1 $seat_2 $network_1 $network_2 \ 
-                   $filesystem_1 $filesystem_2 $git $su $ucode --ignore mkinitcpio
+                   pacman-contrib linux-zen linux-zen-headers linux-firmware $su $ucode $seat
+    if [[ "$REPLACE_networkmanager" == "true" ]]; then
+      basestrap /mnt connman-$INIT_choice iptables-nft
+    else
+      basestrap /mnt networkmanager-$INIT_choice
+    fi
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+      basestrap /mnt grub-btrfs snap-pac
+    else
+      basestrap /mnt bcachefs-tools
+    fi
+
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1484,6 +1478,7 @@ EOF
     if [[ "$REPLACE_elogind" == "true" ]]; then
       ELOGIND="$(ls -- *elogind-*)"
       pacman -U --noconfirm $ELOGIND
+      pacman -S --noconfirm pam_rundir
     fi
 }
 
@@ -1523,6 +1518,7 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
+      pacman -S --noconfirm git
       export basename=$(basename $POST_install_script)
       export basename_clean=${basename%.*}
       if [[ "$REPLACE_sudo" == "true" ]]; then
