@@ -1242,10 +1242,13 @@ EOF
     else
       filesystem_1="bcachefs-tools"
     fi
+    if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
+      git="git"
+    fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
-                   neovim git booster zstd bat bc realtime-privileges efibootmgr grub base base-devel dosfstools \
-                   pacman-contrib linux-zen linux-zen-headers linux-firmware $ucode $seat_1 $seat_2 $su $network_1 \
-                   $network_2 $filesystem_1 $filesystem_2 --ignore mkinitcpio
+                   chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
+                   pacman-contrib linux-zen linux-zen-headers linux-firmware $seat_1 $seat_2 $network_1 $network_2 \ 
+                   $filesystem_1 $filesystem_2 $git $su $ucode --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -1392,7 +1395,7 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager iwd cronie backlight seatd; do
+    for service in $network_manager iwd cronie backlight seatd chrony; do
       if [[ "$REPLACE_elogind" == "true" && "$service" == "seatd" ]] || ! [[ "$service" == "seatd" ]]; then
         if [[ "$INIT_choice" == "dinit" ]]; then
           ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
@@ -1519,9 +1522,9 @@ EOF
 }
 
   SYSTEM_12_POST_SCRIPT() {
-    export basename=$(basename $POST_install_script)
-    export basename_clean=${basename%.*}
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
+      export basename=$(basename $POST_install_script)
+      export basename_clean=${basename%.*}
       if [[ "$REPLACE_sudo" == "true" ]]; then
         echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null
       else
