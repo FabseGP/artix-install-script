@@ -1196,7 +1196,7 @@ EOF
             mount -o noatime,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           elif [[ "${subvolumes[subvolume]}" == "home" ]]; then
             mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/home" "$MOUNTPOINT" /mnt/home
-          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]]; then
+          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]] || [[ "${subvolumes[subvolume]}" == "tmp" ]]; then
             mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
             mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
