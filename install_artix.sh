@@ -89,16 +89,12 @@
     "var/spool"
     "var/tmp"
     "opt"
-    "tmp"
     "srv"
     ".snapshots"
     "root"
     "grub"
     "snapshot"
   )
-
-  # Size of tmpfs (/tmp) 
-  RAM_size_G_half="$((RAM_size / 2))G" # tmpfs will fill half the RAM-size
 
   # Groups which user is added to 
   export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner"
@@ -1196,7 +1192,7 @@ EOF
             mount -o noatime,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           elif [[ "${subvolumes[subvolume]}" == "home" ]]; then
             mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/home" "$MOUNTPOINT" /mnt/home
-          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]] || [[ "${subvolumes[subvolume]}" == "tmp" ]]; then
+          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]]; then
             mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
             mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
@@ -1495,10 +1491,6 @@ EOF
     cp hooks/{check-broken-packages.hook,pacman-cache-cleanup.hook} /usr/share/libalpm/hooks
     cp scripts/check-broken-packages /usr/bin
     chmod 755 /usr/bin/check-broken-packages
-    touch /etc/tmpfiles.d/tmp.conf
-    cat << EOF | tee -a /etc/tmpfiles.d/tmp.conf > /dev/null
-D! /tmp 1777 root root 0
-EOF
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
