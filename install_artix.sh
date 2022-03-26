@@ -1583,8 +1583,12 @@ EOF
   # Executing functions
   for ((function=0; function < "${#functions[@]}"; function++)); do
     if [[ "${functions[function]}" == "SCRIPT"* ]]; then
-      if [[ "$INTERACTIVE_INSTALL" == "true" ]] && [[ "${functions[function]}" == "SCRIPT_02"* || "${functions[function]}" == "SCRIPT_03"* ]]; then
-        "${functions[function]}"
+      if [[ "${functions[function]}" == "SCRIPT_02"* || "${functions[function]}" == "SCRIPT_03"* ]]; then
+        if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
+          "${functions[function]}"  
+        else
+          :
+        fi    
       else
         "${functions[function]}"
       fi
