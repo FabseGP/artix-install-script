@@ -1189,13 +1189,9 @@ EOF
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            mount -o noatime,nodatacow,discard=async,nodev,noexec,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
-          elif [[ "${subvolumes[subvolume]}" == "home" ]]; then
-            mount -o noatime,compress=zstd,discard=async,nodev,nosuid,subvol="@/home" "$MOUNTPOINT" /mnt/home
-          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]] || [[ "${subvolumes[subvolume]}" == "srv" ]]; then
-            mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,nodatacow,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           else
-            mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
         elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/boot/{efi,grub}
@@ -1518,11 +1514,7 @@ EOF
       else
         echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
-      if ! [[ -d "/home/$USERNAME" ]]; then
-        mkdir /home/$USERNAME
-        chown -R $USERNAME:wheel /home/$USERNAME
-      fi
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
+      su -l "$USERNAME" -c "HOME=/home/user; git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
       rm -rf /home/$USERNAME/$basename_clean
       if [[ "$REPLACE_sudo" == "true" ]]; then
         sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
