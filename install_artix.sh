@@ -111,7 +111,7 @@
 # Source answerfile if conditions is met
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
-    if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then
+    if [[ -f "/.decrypt/decrypt.txt" ]]; then
       source /.decrypt/decrypt.txt
     else
       source answerfile
@@ -1577,7 +1577,11 @@ EOF
           export DRIVE_path_primary=""$DRIVE_path"2"
         fi
       fi   
-    fi        
+    fi  
+    pacman-key --init
+    pacman-key --populate artix archlinux
+    pacman -Scc --noconfirm
+    pacman -Syy      
   fi
 
   # Executing functions
