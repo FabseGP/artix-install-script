@@ -62,7 +62,7 @@
   BOOTLOADER_label="ARTIX_BOOT"
   PACKAGES_additional="NONE"
   POST_install_script="NOT CHOSEN"
-  POST_install_script_name="NOT CHOSEN"
+  POST_install_script_path="NOT CHOSEN"
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -241,7 +241,7 @@ EOM
     read -r -d '' OUTPUT_miscellaneous << EOM
 $MISCELLANEOUS
 VALUE:,$BOOTLOADER_label,$PACKAGES_additional,$POST_install_script
-PATH:,,,$POST_install_script_name
+PATH:,,,$POST_install_script_path
 EOM
 }
 
@@ -767,7 +767,7 @@ EOM
         fi   
       elif [[ "$POST_script_export" == "SKIP" ]]; then 
         export POST_install_script=NONE
-        export POST_install_script_name=NONE
+        export POST_install_script_path=NONE
         PROCEED="true"  
       fi
     elif [[ "$1" == "path" ]]; then
@@ -777,7 +777,7 @@ EOM
           git clone -q https://$POST_install_script
         fi
         if [ -f "$basename_clean/$POST_script_name_export" ]; then
-          export POST_install_script_name=$POST_script_name_export
+          export POST_install_script_path=$POST_script_name_export
           rm -rf test
           PROCEED="true"
         else
@@ -1070,7 +1070,7 @@ EOM
     fi
     if [[ "$POST_script" == "false" ]]; then
       export POST_install_script="IGNORED"
-      export POST_install_script_name="IGNORED"
+      export POST_install_script_path="IGNORED"
     fi
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
@@ -1315,6 +1315,7 @@ EOF
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
     cd /install_script/scripts || exit
+    chmod u+x repositories.sh
     ./repositories.sh
     if ! [[ "$PACKAGES_additional" == "NONE" ]]; then
       pacman -S --noconfirm --needed "$PACKAGES_additional"
@@ -1526,7 +1527,7 @@ EOF
       else
         echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
       rm -rf /home/$USERNAME/$basename_clean
       if [[ "$REPLACE_sudo" == "true" ]]; then
         sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
