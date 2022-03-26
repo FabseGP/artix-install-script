@@ -4,15 +4,28 @@ A customizable install-script for Artix Linux that can either be executed intera
 
 By default, the following is set up:
 
-- BTRFS-subvolumes with support for snapshots; taken pre and post kernel- or grub-update
-- Paru as AUR-helper
-- GRUB as bootloader
+- Subvolumes with support for snapshots
+- Paru as AUR-helper; of course aliased to yay!
 - Arch-repositories enabled
+- The following pacman-hooks:
+    - Checking for packages with broken / non-satisfied dependencies when updating; mostly relevant for AUR-packages
+    - Cleaning package cache to only keep the two latest versions
+    - Creating snapshots pre and post kernel update/install + recreates grub.cfg
+- The following packages:
+    - GRUB as bootloader
+    - linux-zen, linux-zen-headers and linux-firmware
+    - cronie (used for snapshots-cleaning), cryptsetup (for encrypted swap alone, if no encryption of /), iwd (replaces wpa_supplicant), chrony (used to keep check of system-time) and backlight (saves previous brightness) as init-services
+    - Either intel-ucode or amd-ucode depending on your CPU
+    - booster as a fast replacement for mkinitcpioe
+    - Filesystem utilies; either btrfs-progs or bcachefs-tools + dosfstools (for FAT32)
+    - Miscellaneous packages: iptables-nft (replaces iptables), pacman-contrib (provides paccache and more), snap-pac and base-devel
 
 while the following are decided by the user:
 
+- Choice of filesystem; either btrfs or bcachefs
+    - NOTICE: Bcachefs is yet to be mainlined into the kernel
 - LUKS2-encryption of /
-    - Due to GRUB-limitations, a prompt for the passphrase will emerge twice
+    - Currently booster doesn't support encryption-keys, whereas two password-prompts (one for unlocking /boot and /) will emerge on boot; set to be added on 0.8 release
 - Swap-partition
 - Choice of init; dinit, openrc or runit
 - Replacing the following packages with alternatives:
