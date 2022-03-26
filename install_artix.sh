@@ -111,7 +111,7 @@
 # Source answerfile if conditions is met
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
-    if [[ -f "/.encrypt/.answer_encrypt.txt" ]]; then
+    if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then
       source /.decrypt/decrypt.txt
     else
       source answerfile
