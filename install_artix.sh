@@ -1518,6 +1518,10 @@ EOF
       else
         echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
+      if ! [[ -d "/home/$USERNAME" ]]; then
+        mkdir /home/$USERNAME
+        chown -R $USERNAME:wheel /home/$USERNAME
+      fi
       su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
       rm -rf /home/$USERNAME/$basename_clean
       if [[ "$REPLACE_sudo" == "true" ]]; then
