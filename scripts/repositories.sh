@@ -11,9 +11,4 @@
       cp configs/pacman.conf /etc/pacman.conf
       pacman -Syy 
     fi
-  elif [[ "$(pacman -Qs artix-archlinux-support)" ]]; then
-    pacman-key --init
-    pacman-key --populate artix archlinux
-    pacman -Scc --noconfirm
-    pacman -Syy      
   fi
