@@ -3,9 +3,9 @@
 # DO NOT TOUCH!
 
   set -a # Force export all variables; most relevant for answerfile
-  if [[ -f "/.encrypt/.answer_encrypt.txt" ]]; then
-    openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -salt -in /.encrypt/.answer_encrypt.txt -out /.decrypt/.decrypt.txt -pass file:/.nothing/.nothing.txt
-    source /.decrypt/.decrypt.txt
+  if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then
+    openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -in /.encrypt/answer_encrypt.txt -out /.decrypt/decrypt.txt -pass file:/.nothing/nothing.txt
+    source /.decrypt/decrypt.txt
   else
     source answerfile
   fi
@@ -112,7 +112,7 @@
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
     if [[ -f "/.encrypt/.answer_encrypt.txt" ]]; then
-      source /.decrypt/.decrypt.txt
+      source /.decrypt/decrypt.txt
     else
       source answerfile
     fi
