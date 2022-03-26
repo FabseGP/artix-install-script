@@ -1519,7 +1519,6 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      pacman -S --noconfirm git
       export basename=$(basename $POST_install_script)
       export basename_clean=${basename%.*}
       if [[ "$REPLACE_sudo" == "true" ]]; then
