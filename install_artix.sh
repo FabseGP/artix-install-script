@@ -62,7 +62,7 @@
   BOOTLOADER_label="ARTIX_BOOT"
   PACKAGES_additional="NONE"
   POST_install_script="NOT CHOSEN"
-  POST_install_script_path="NOT CHOSEN"
+  POST_install_script_name="NOT CHOSEN"
   WRONG=""
   PROCEED=""
   CONFIRM=""
@@ -237,7 +237,7 @@ EOM
     read -r -d '' OUTPUT_miscellaneous << EOM
 $MISCELLANEOUS
 VALUE:,$BOOTLOADER_label,$PACKAGES_additional,$POST_install_script
-PATH:,,,$POST_install_script_path
+PATH:,,,$POST_install_script_name
 EOM
 }
 
@@ -763,7 +763,7 @@ EOM
         fi   
       elif [[ "$POST_script_export" == "SKIP" ]]; then 
         export POST_install_script=NONE
-        export POST_install_script_path=NONE
+        export POST_install_script_name=NONE
         PROCEED="true"  
       fi
     elif [[ "$1" == "path" ]]; then
@@ -773,7 +773,7 @@ EOM
           git clone -q https://$POST_install_script
         fi
         if [ -f "$basename_clean/$POST_script_name_export" ]; then
-          export POST_install_script_path=$POST_script_name_export
+          export POST_install_script_name=$POST_script_name_export
           rm -rf test
           PROCEED="true"
         else
@@ -1066,7 +1066,7 @@ EOM
     fi
     if [[ "$POST_script" == "false" ]]; then
       export POST_install_script="IGNORED"
-      export POST_install_script_path="IGNORED"
+      export POST_install_script_name="IGNORED"
     fi
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
@@ -1513,7 +1513,7 @@ EOF
       else
         echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
       rm -rf /home/$USERNAME/$basename_clean
       if [[ "$REPLACE_sudo" == "true" ]]; then
         sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
