@@ -1374,6 +1374,7 @@ EOF
     if [[ "$REPLACE_networkmanager" == "true" ]]; then
       export network_manager="connmand"
     else
+      pacman -S --noconfirm polkit
       export network_manager="NetworkManager"
       touch /etc/NetworkManager/conf.d/wifi_backend.conf
       cat << EOF | tee -a /etc/NetworkManager/conf.d/wifi_backend.conf > /dev/null
