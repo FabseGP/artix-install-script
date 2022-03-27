@@ -1381,15 +1381,13 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager iwd cronie backlight seatd chronyd; do
-      if [[ "$REPLACE_elogind" == "true" && "$service" == "seatd" ]] || ! [[ "$service" == "seatd" ]]; then
-        if [[ "$INIT_choice" == "dinit" ]]; then
-          ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
-        elif [[ "$INIT_choice" == "runit" ]]; then
-          ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
-        elif [[ "$INIT_choice" == "openrc" ]]; then
-          rc-update add $service
-        fi
+    for service in $network_manager iwd cronie backlight chronyd; do
+      if [[ "$INIT_choice" == "dinit" ]]; then
+        ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
+      elif [[ "$INIT_choice" == "runit" ]]; then
+        ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
+      elif [[ "$INIT_choice" == "openrc" ]]; then
+        rc-update add $service
       fi
     done
 }
@@ -1514,7 +1512,7 @@ EOF
       else
         echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
-      su -l "$USERNAME" -c "HOME=/home/user; git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_path"; bash "$POST_install_script_path""
       rm -rf /home/$USERNAME/$basename_clean
       if [[ "$REPLACE_sudo" == "true" ]]; then
         sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
