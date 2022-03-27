@@ -1365,7 +1365,7 @@ complete -cf doas
 
 EOF
     else
-      sed -i -e "/Sudo = doas/s/^#*/;/" /etc/paru.conf
+      sed -i -e "/Sudo = doas/s/^#*/#/" /etc/paru.conf
       echo "%wheel ALL=(ALL) ALL" | (EDITOR="tee -a" visudo)
     fi
 }
