@@ -1466,6 +1466,7 @@ EOF
     cd /install_script/packages || exit   
     if [[ "$REPLACE_sudo" == "true" ]]; then
       pacman -Rns --noconfirm sudo
+      ln -s $(which doas) /usr/bin/sudo
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
       ELOGIND="$(ls -- *elogind-*)"
