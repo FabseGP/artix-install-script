@@ -1484,9 +1484,7 @@ EOF
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su-l
     echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
-    cp hooks/{check-broken-packages.hook,pacman-cache-cleanup.hook} /usr/share/libalpm/hooks
-    cp scripts/check-broken-packages /usr/bin
-    chmod 755 /usr/bin/check-broken-packages
+    cp hooks/pacman-cache-cleanup.hook /usr/share/libalpm/hooks
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
