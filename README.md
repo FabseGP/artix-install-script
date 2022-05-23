@@ -25,7 +25,7 @@ while the following are decided by the user:
 - Choice of filesystem; either btrfs or bcachefs
     - NOTICE: Bcachefs is yet to be mainlined into the kernel
 - LUKS2-encryption of /
-    - Currently booster doesn't support encryption-keys, whereas two password-prompts (one for unlocking /boot and /) will emerge on boot; set to be added on 0.8 release
+    - Currently booster doesn't support encryption-keys, whereas two password-prompts (one for unlocking /boot and /) will emerge on boot; set to be added in 0.9 release
 - Swap-partition
 - Choice of init; dinit, openrc or runit
 - Replacing the following packages with alternatives:
