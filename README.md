@@ -8,7 +8,6 @@ By default, the following is set up:
 - Paru as AUR-helper; of course aliased to yay!
 - Arch-repositories enabled
 - The following pacman-hooks:
-    - Checking for packages with broken / non-satisfied dependencies when updating; mostly relevant for AUR-packages
     - Cleaning package cache to only keep the two latest versions
     - Creating snapshots pre and post kernel update/install + recreates grub.cfg
 - The following packages:
