@@ -71,7 +71,7 @@
 
 # locals
 
-  TIMEZONE="NOT SPECIFIED" # e.g. "Europe/Copenhagen
+  TIMEZONE="NOT SPECIFIED" # e.g. "Europe/Copenhagen"
   LANGUAGES_generate="NOT SPECIFIED" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
   LANGUAGE_system="NOT SPECIFIED"
   KEYMAP_system="NOT SPECIFIED"
