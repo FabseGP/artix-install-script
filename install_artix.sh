@@ -1302,7 +1302,7 @@ EOF
     if [[ "$REPLACE_elogind" == "true" ]]; then
       usermod -a -G seatd "$USERNAME"
     fi
-    ( echo "$USER_passwd" ; echo "$USER_passwd" ) | passwd -q "$USERNAME"
+    echo "$USERNAME:$USER_passwd" | chpasswd
 }
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
