@@ -12,6 +12,7 @@ Target = linux-lts
 Target = linux-zen
 Target = linux-hardened
 Target = linux-tkg
+Target = linux-libre
 
 [Action]
 Description = Performing snapper post snapshots for the following configurations...
