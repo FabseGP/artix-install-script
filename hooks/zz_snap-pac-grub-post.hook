@@ -12,6 +12,7 @@ Target = linux-lts
 Target = linux-zen
 Target = linux-hardened
 Target = linux-tkg
+Target = linux-libre
 
 [Action]
 Description = Generating GRUB-config to let grub-btrfs detect new snapshots...
