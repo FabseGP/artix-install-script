@@ -15,7 +15,7 @@ By default, the following is set up:
     - linux-zen, linux-zen-headers and linux-firmware
     - cronie (used for snapshots-cleaning), cryptsetup (for encrypted swap alone, if no encryption of /), iwd (replaces wpa_supplicant), chrony (used to keep check of system-time) and backlight (saves previous brightness) as init-services
     - Either intel-ucode or amd-ucode depending on your CPU
-    - booster as a fast replacement for mkinitcpioe
+    - booster as a fast replacement for mkinitcpio
     - Filesystem utilies; either btrfs-progs or bcachefs-tools + dosfstools (for FAT32)
     - Miscellaneous packages: iptables-nft (replaces iptables), pacman-contrib (provides paccache and more), snap-pac and base-devel
 
