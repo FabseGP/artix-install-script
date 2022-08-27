@@ -1165,7 +1165,7 @@ EOF
     done
     sync
     cd "$BEGINNER_DIR" || exit
-    mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/efi
+    mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
@@ -1399,7 +1399,7 @@ EOF
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
-        grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$BOOTLOADER_label"
+        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         touch grub-pre.cfg
         cat << EOF | tee -a grub-pre.cfg > /dev/null
 cryptomount -u $UUID_2 
@@ -1409,7 +1409,7 @@ insmod normal
 normal
 EOF
         grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
-        cp /tmp/image /efi/EFI/"$BOOTLOADER_label"/grubx64.efi
+        cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
         grub-mkconfig -o /boot/grub/grub.cfg
         rm -rf {/tmp/image,grub-pre.cfg}
       fi
@@ -1418,7 +1418,7 @@ EOF
     fi
     if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
       sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
-      grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$BOOTLOADER_label"
+      grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
     fi
 }
