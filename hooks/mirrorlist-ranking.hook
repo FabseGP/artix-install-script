@@ -1,0 +1,12 @@
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = artix-mirrorlist
+Target = artix-archlinux-support
+
+[Action]
+Description = Ranking mirrors...
+Depends = pacman-contrib
+When = PreTransaction
+Exec = /usr/bin/bash -c "/usr/share/libalpm/scripts/snap-pac post"
