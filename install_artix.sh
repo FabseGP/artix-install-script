@@ -1393,7 +1393,6 @@ EOF
     cd /install_script || exit
     cp configs/10_linux /etc/grub.d/10_linux
     cp configs/10_linux /.secret
-    sed -i 's/GRUB_GFXMODE="1024x768,800x600"/GRUB_GFXMODE="auto"/' /etc/default/grub
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
@@ -1463,6 +1462,7 @@ EOF
     cp scripts/ranking-mirrors.sh /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/ranking-mirrors
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
+    cd /install_script/packages
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
 }
