@@ -15,26 +15,7 @@
   mapfile -t DRIVES < <(lsblk -n --output TYPE,KNAME,SIZE | awk '$1=="disk"{print "/dev/"$2"|"$3}')
   core_count=$(($(grep -c ^processor /proc/cpuinfo) / 2))
 
-#----------------------------------------------------------------------------------------------------------------------------------
-
-# Configurable variables
-
-  # Choices during install
-  FILESYSTEM_primary_bcachefs=""
-  FILESYSTEM_primary_btrfs=""
-  ENCRYPTION_partitions=""
-  SWAP_partition=""
-  INIT_choice=""
-  REPLACE_networkmanager=""
-  REPLACE_sudo=""
-  REPLACE_elogind=""
-  POST_script=""
-
   # Drives and partitions + encryption
-  DRIVE_path="" 
-  DRIVE_path_boot=""
-  DRIVE_path_swap=""
-  DRIVE_path_primary=""
   BOOT_size="300"
   BOOT_label="BOOT"
   SWAP_size="$((RAM_size * 1000))"
@@ -43,7 +24,6 @@
   PRIMARY_size="∞"
   PRIMARY_label="PRIMARY"
   ENCRYPTION_passwd="NOT CHOSEN"
-  MOUNTPOINT=""
 
   # Locals
   TIMEZONE="Europe/Copenhagen"
@@ -63,9 +43,6 @@
   PACKAGES_additional="NONE"
   POST_install_script="NOT CHOSEN"
   POST_install_script_name="NOT CHOSEN"
-  WRONG=""
-  PROCEED=""
-  CONFIRM=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -81,20 +58,7 @@
   fi
 
   # Subvolumes to be created 
-  subvolumes=(
-    \@
-    "home"
-    "var/cache"
-    "var/log"
-    "var/spool"
-    "var/tmp"
-    "opt"
-    "srv"
-    ".snapshots"
-    "root"
-    "grub"
-    "snapshot"
-  )
+  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" ".snapshots" "root" "grub" "snapshot")
 
   # Groups which user is added to 
   export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner"
