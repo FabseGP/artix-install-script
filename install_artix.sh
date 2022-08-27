@@ -1122,7 +1122,7 @@ EOM
           fi
         else
           btrfs subvolume create "/mnt/${subvolumes[subvolume]}"
-          mkdir -p /mnt/@/{var,boot}
+          mkdir -p /mnt/@/{var,boot,efi}
         fi
       elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
         bcachefs subvolume create "${subvolumes[subvolume]}"
@@ -1165,7 +1165,7 @@ EOF
     done
     sync
     cd "$BEGINNER_DIR" || exit
-    mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
+    mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/efi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
@@ -1384,9 +1384,8 @@ EOF
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/05-snap-pac-pre.hook
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz-snap-pac-post.hook
       sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz_snap-pac-grub-post.hook
-      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook,zz_snap-pac-grub-post.hook} /usr/share/libalpm/hooks
-      cp hooks/{05-snap-pac-pre.hook,10-snap-pac-removal.hook,zz-snap-pac-post.hook,zz_snap-pac-grub-post.hook} /.secret
-      cp hooks/snap-pac-config.hook /etc/pacman.d/hooks
+      cp hooks/* /etc/pacman.d/hooks
+      cp hooks/* /.secret
     fi
 }
 
@@ -1401,7 +1400,7 @@ EOF
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
-        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+        grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$BOOTLOADER_label"
         touch grub-pre.cfg
         cat << EOF | tee -a grub-pre.cfg > /dev/null
 cryptomount -u $UUID_2 
@@ -1411,7 +1410,7 @@ insmod normal
 normal
 EOF
         grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
-        cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
+        cp /tmp/image /efi/EFI/"$BOOTLOADER_label"/grubx64.efi
         grub-mkconfig -o /boot/grub/grub.cfg
         rm -rf {/tmp/image,grub-pre.cfg}
       fi
@@ -1420,10 +1419,9 @@ EOF
     fi
     if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
       sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
-      grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+      grub-install --target=x86_64-efi --efi-directory=/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
     fi
-    cp hooks/grub-booster.hook /etc/pacman.d/hooks
 }
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
@@ -1447,7 +1445,6 @@ EOF
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su-l
     echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
-    cp hooks/pacman-cache-cleanup.hook /usr/share/libalpm/hooks
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
@@ -1463,7 +1460,11 @@ EOF
       chmod u+x /etc/cron.monthly/btrfs_scrub.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
-
+    cp scripts/ranking-mirrors.sh /usr/share/libalpm/scripts
+    chmod u+x /usr/share/libalpm/scripts/ranking-mirrors
+    pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
+    PACDIFF="$(ls -- *pacdiff-*)"
+    pacman -U --noconfirm $PACDIFF
 }
 
   SYSTEM_12_POST_SCRIPT() {

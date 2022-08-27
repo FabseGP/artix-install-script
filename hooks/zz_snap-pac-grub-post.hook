@@ -7,12 +7,7 @@ Target = glibc
 Target = INIT
 Target = booster
 Target = grub
-Target = linux
-Target = linux-lts
-Target = linux-zen
-Target = linux-hardened
-Target = linux-tkg
-Target = linux-libre
+Target = linux-*
 
 [Action]
 Description = Generating GRUB-config to let grub-btrfs detect new snapshots...
