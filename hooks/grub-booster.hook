@@ -7,4 +7,4 @@ Target = grub
 [Action]
 Description = Defaults grub-entries to booster-initramfs only...
 When = PostTransaction
-Exec = /bin/sh -c 'cp /.secret/10_linux /etc/grub.d/10_linux'
+Exec = /bin/sh -c '/usr/share/libalpm/scripts/grub-update'
