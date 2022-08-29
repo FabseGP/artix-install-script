@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 [[ -v SNAP_PAC_SKIP ]] && { printf "==> skipping due to SNAP_PAC_SKIP being set"; exit 0; }
 
