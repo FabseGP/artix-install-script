@@ -1,6 +1,8 @@
 #!/usr/bin/bash
   if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
     cp /install_script/configs/pacman2.conf /etc/pacman.conf
+    pacman -Sy --noconfirm artix-keyring
+    rm -r /etc/pacman.d/gnupg
     pacman-key --init
     pacman-key --populate artix
     pacman-key --refresh-keys
