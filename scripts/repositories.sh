@@ -5,6 +5,7 @@
     rm -rf /etc/pacman.d/gnupg
     pacman-key --init
     pacman-key --populate artix
+    pacman-key --refresh-keys
   fi
   pacman -Syy --noconfirm artix-archlinux-support
   pacman-key --init
