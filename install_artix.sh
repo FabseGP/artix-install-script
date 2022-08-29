@@ -1264,6 +1264,7 @@ EOF
     echo "root:$ROOT_passwd" | chpasswd
     useradd -m -g users -G "$USER_groups" "$USERNAME"
     if [[ "$REPLACE_elogind" == "true" ]]; then
+      groupadd seatd
       usermod -a -G seatd "$USERNAME"
     fi
     echo "$USERNAME:$USER_passwd" | chpasswd
