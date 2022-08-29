@@ -1393,6 +1393,7 @@ EOF
     cd /install_script || exit
     cp configs/10_linux /etc/grub.d/10_linux
     cp configs/10_linux /.secret
+    echo "$BOOTLOADER_label" >> /.secret/bootloader-id
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
@@ -1411,6 +1412,7 @@ EOF
         grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
         cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
         grub-mkconfig -o /boot/grub/grub.cfg
+        cp grub-pre.cfg /.secret
         rm -rf {/tmp/image,grub-pre.cfg}
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
@@ -1455,9 +1457,9 @@ EOF
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cp scripts/btrfs_scrub.sh /etc/cron.monthly
-      cp scripts/grub-mkconfig /usr/share/libalpm/scripts
+      cp scripts/{grub-mkconfig,grub-update} /usr/share/libalpm/scripts
       chmod u+x /etc/cron.monthly/btrfs_scrub.sh
-      chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
+      chmod 755 /usr/share/libalpm/scripts/{grub-mkconfig,grub-update}
     fi
     cp scripts/ranking-mirrors /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/ranking-mirrors
