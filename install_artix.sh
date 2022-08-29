@@ -1462,7 +1462,7 @@ EOF
       chmod u+x /etc/cron.monthly/btrfs_scrub.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
-    cp scripts/[ranking-mirrors,grub-update} /usr/share/libalpm/scripts
+    cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/{ranking-mirrors,grub-update}
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
     cd /install_script/packages
