@@ -1,6 +1,8 @@
 #!/usr/bin/bash
   if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
     cp /install_script/configs/pacman2.conf /etc/pacman.conf
+    pacman-key --init
+    pacman-key --populate artix
   fi
   pacman -Syy --noconfirm artix-archlinux-support
   pacman-key --init
