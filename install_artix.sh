@@ -1457,12 +1457,12 @@ EOF
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cp scripts/btrfs_scrub.sh /etc/cron.monthly
-      cp scripts/{grub-mkconfig,grub-update} /usr/share/libalpm/scripts
+      cp scripts/grub-mkconfig /usr/share/libalpm/scripts
       chmod u+x /etc/cron.monthly/btrfs_scrub.sh
-      chmod 755 /usr/share/libalpm/scripts/{grub-mkconfig,grub-update}
+      chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
-    cp scripts/ranking-mirrors /usr/share/libalpm/scripts
-    chmod u+x /usr/share/libalpm/scripts/ranking-mirrors
+    cp scripts/[ranking-mirrors,grub-update} /usr/share/libalpm/scripts
+    chmod u+x /usr/share/libalpm/scripts/{ranking-mirrors,grub-update}
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
     cd /install_script/packages
     PACDIFF="$(ls -- *pacdiff-*)"
