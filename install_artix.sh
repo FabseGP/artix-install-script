@@ -1394,7 +1394,11 @@ EOF
     cd /install_script || exit
     cp configs/10_linux /etc/grub.d/10_linux
     cp configs/10_linux /.secret
-    echo "$BOOTLOADER_label" >> /.secret/bootloader-id
+    touch /.secret/bootloader-id
+    cat << EOF | tee -a /.secret/bootloader-id > /dev/null
+#!/bin/sh
+BOOTLOADER_label=$BOOTLOADER_label
+EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
