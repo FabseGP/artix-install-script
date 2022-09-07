@@ -145,7 +145,8 @@
     "FILESYSTEM_primary_btrfs:BTRFS as filesystem"
     "FILESYSTEM_primary_bcachefs:$BCACHEFS_notice"
     "ENCRYPTION_partitions:Encryption" 
-    "SWAP_partition:Swap-partition" 
+    "SWAP_partition:Swap-partition # NOTICE: Without implementation for hibernation"
+    "SWAP_file:Swap-file NOTICE: #½ With implementation for hibernation"     
     "INIT_choice_runit:runit as init" 
     "INIT_choice_openrc:openrc as init" 
     "INIT_choice_dinit:dinit as init" 
@@ -409,19 +410,18 @@ EOM
           space)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              COUNT_init=$(grep -o true <<< "${selected[@]:4:3}" | wc -l)
+              COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              if [[ "$COUNT_init" -eq "1" ]] && [[ "$active" == @(4|5|6) ]]; then
-                eval selected[{4..6}]=false
+              COUNT_swap=$(grep -o true <<< "${selected[@]:3:4}" | wc -l)
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then
+                eval selected[{5..7}]=false
+                toggle_option $active
+              elif [[ "$COUNT_swap" -gt "0" ]] && [[ "$active" == @(3|4) ]]; then
+                eval selected[{3..4}]=false
                 toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then
                 eval selected[{0..1}]=false
                 toggle_option $active
-              elif [[ "$active" == "7" ]] && [[ "${selected[7]}" == "true" ]] && [[ "${selected[9]}" == "true" ]]; then
-                eval selected[7]=false
-                eval selected[9]=false
-              elif [[ "$active" == "9" ]] && [[ "${selected[7]}" == "false" ]]; then
-                :
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then
                 :
               else
@@ -443,7 +443,7 @@ EOM
           enter)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              export COUNT_init=$(grep -o true <<< "${selected[@]:4:3}" | wc -l)
+              export COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
               export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
               export COUNT_intro="${#selected[@]}"
               export values=("${selected[@]}")
@@ -552,6 +552,7 @@ EOM
       else
         export SWAP_size=$DRIVE_size
         export SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
+        export SWAP_size_gb=$(("$SWAP_size" / 1000))
         PROCEED="true"
       fi
     else
@@ -1084,7 +1085,7 @@ EOM
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
-        echo "$ENCRYPTION_passwd" | cryptsetup open "$DRIVE_path_primary" cryptroot
+        echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --perf-no_write_workqueue --persistent "$DRIVE_path_primary" cryptroot
         mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
         MOUNTPOINT="/dev/mapper/cryptroot"
       else
@@ -1128,6 +1129,9 @@ EOM
         bcachefs subvolume create "${subvolumes[subvolume]}"
       fi
     done
+    if [[ "$SWAP_file" == "true" ]]; then
+      btrfs subvolume create "/mnt/@/swap"
+    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       touch /mnt/@/.snapshots/1/info.xml
       date=$(date +"%Y-%m-%d %H:%M:%S")
@@ -1147,6 +1151,9 @@ EOF
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
+    if [[ "$SWAP_file" == "true" ]]; then
+      mkdir -p /mnt/.swapvol
+    fi
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
       if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "snapshot" ]]; then
@@ -1163,6 +1170,16 @@ EOF
         fi
       fi
     done
+    if [[ "$SWAP_file" == "true" ]]; then
+      mount -o compress=no,space_cache,ssd,discard=async,subvol=@/swap "$MOUNTPOINT" /mnt/.swapvol
+      truncate -s 0 /mnt/.swapvol/swapfile
+      chattr +C /mnt/.swapvol/swapfile
+      btrfs property set /mnt/.swapvol/swapfile compression none
+      fallocate -l "$SWAP_size_gb" /mnt/.swapvol/swapfile
+      chmod 600 /mnt/.swapvol/swapfile
+      mkswap /mnt/.swapvol/swapfile
+      swapon /mnt/.swapvol/swapfile
+    fi
     sync
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
@@ -1347,7 +1364,7 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager iwd cronie backlight chronyd; do
+    for service in $network_manager cronie backlight chronyd; do
       if [[ "$INIT_choice" == "dinit" ]]; then
         ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
       elif [[ "$INIT_choice" == "runit" ]]; then
@@ -1392,8 +1409,8 @@ EOF
 
   SYSTEM_09_BOOTLOADER() {
     cd /install_script || exit
-    cp configs/10_linux /etc/grub.d/10_linux
-    cp configs/10_linux /.secret
+    cp files/10_linux /etc/grub.d/10_linux
+    cp files/10_linux /.secret
     touch /.secret/bootloader-id
     cat << EOF | tee -a /.secret/bootloader-id > /dev/null
 #!/bin/sh
@@ -1402,7 +1419,16 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
+        if [[ "$SWAP_file" == "true" ]]; then
+          cd files || exit
+          gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
+          ./btrfs_map_physical /mnt/.swapvol/swapfile > offset
+          SWAP_file_offset=$(sed '2q;d' offset | awk 'NF>1{print $NF}')
+          cd /install_script || exit
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ resume=UUID='"$UUID_1"'\ resume_offset='"$SWAP_file_offset"'\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
+        else
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
+        fi
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -1472,6 +1498,9 @@ EOF
     cd /install_script/packages
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
+    if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
+      cp files/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
+    fi
 }
 
   SYSTEM_12_POST_SCRIPT() {
