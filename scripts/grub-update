@@ -7,5 +7,4 @@
     grub-mkimage -p '/boot/grub' -O x86_64-efi -c /.secret/grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
     cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
   fi
-  grub-mkconfig -o /boot/grub/grub.cfg
-  
+    
