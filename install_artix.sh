@@ -1424,6 +1424,7 @@ EOF
           gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
           ./btrfs_map_physical /mnt/.swapvol/swapfile > offset
           SWAP_file_offset=$(sed '2q;d' offset | awk 'NF>1{print $NF}')
+          mv btrfs_map_physical /usr/local/bin
           cd /install_script || exit
           sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ resume=UUID='"$UUID_1"'\ resume_offset='"$SWAP_file_offset"'\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
         else
