@@ -20,7 +20,6 @@
   BOOT_label="BOOT"
   SWAP_size="$((RAM_size * 1000))"
   SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
-  SWAP_label="RAM_co"
   PRIMARY_size="∞"
   PRIMARY_label="PRIMARY"
   ENCRYPTION_passwd="NOT CHOSEN"
@@ -51,7 +50,7 @@
   # BCACHEFS-support
   if ! grep -q bcachefs "/proc/filesystems"; then
     BCACHEFS_implemented="false"
-    BCACHEFS_notice="(BCACHEFS as filesystem) # NOTICE: Currently not implemented"
+    BCACHEFS_notice="BCACHEFS as filesystem # NOTICE: Currently not implemented"
   else
     BCACHEFS_implemented="true"
     BCACHEFS_notice="BCACHEFS as filesystem"
@@ -145,8 +144,7 @@
     "FILESYSTEM_primary_btrfs:BTRFS as filesystem"
     "FILESYSTEM_primary_bcachefs:$BCACHEFS_notice"
     "ENCRYPTION_partitions:Encryption" 
-    "SWAP_partition:Swap-partition # NOTICE: Without implementation for hibernation"
-    "SWAP_file:Swap-file NOTICE: #½ With implementation for hibernation"     
+    "ZRAM:zram enabled # NOTICE: Compressed block devices in RAM as swap"
     "INIT_choice_runit:runit as init" 
     "INIT_choice_openrc:openrc as init" 
     "INIT_choice_dinit:dinit as init" 
@@ -161,7 +159,7 @@
     "${DRIVES[@]}"
 )
 
-  PARTITIONS="VALUE,BOOT-PARTITION (1),SWAP-PARTITION (2),PRIMARY-PARTITION (3)"
+  PARTITIONS="VALUE,BOOT-PARTITION (1),ZRAM-SIZE (2),PRIMARY-PARTITION (3)"
   PARTITIONS_without_swap="VALUE,BOOT-PARTITION (1),PRIMARY-PARTITION (2)"
   LOCALS="VALUE,TIMEZONE (1),LANGUAGES (2),KEYMAP (3),HOSTNAME (4)"
   USERS="VALUE,root (1),personal (2)"
@@ -176,7 +174,7 @@
     read -r -d '' OUTPUT_partitions_full << EOM
 $PARTITIONS
 SIZE:,$BOOT_size MB,$SWAP_size MB, $PRIMARY_size MB
-LABEL:,$BOOT_label,$SWAP_label,$PRIMARY_label
+LABEL:,$BOOT_label,,$PRIMARY_label
 ENCRYPTION-password:,,,$ENCRYPTION_passwd
 EOM
 
@@ -410,14 +408,10 @@ EOM
           space)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
+              COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              COUNT_swap=$(grep -o true <<< "${selected[@]:3:4}" | wc -l)
-              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then
-                eval selected[{5..7}]=false
-                toggle_option $active
-              elif [[ "$COUNT_swap" -gt "0" ]] && [[ "$active" == @(3|4) ]]; then
-                eval selected[{3..4}]=false
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then
+                eval selected[{4..6}]=false
                 toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then
                 eval selected[{0..1}]=false
@@ -480,24 +474,12 @@ EOM
                     j=$((i+1))
                     PATH_cleaned=$(echo "${options[j]}" | cut -d'|' -f 1)
                     export "DRIVE_path"="$PATH_cleaned"
-                    if [[ "$SWAP_partition" == "true" ]]; then
-                      if [[ "$DRIVE_path" == *"nvme"* ]]; then
-                        export DRIVE_path_boot=""$DRIVE_path"p1"
-                        export DRIVE_path_swap=""$DRIVE_path"p2"
-                        export DRIVE_path_primary=""$DRIVE_path"p3"
-                      else
-                        export DRIVE_path_boot=""$DRIVE_path"1"
-                        export DRIVE_path_swap=""$DRIVE_path"2"
-                        export DRIVE_path_primary=""$DRIVE_path"3"
-                      fi
-                    else 
-                      if [[ "$DRIVE_path" == *"nvme"* ]]; then
-                        export DRIVE_path_boot=""$DRIVE_path"p1"
-                        export DRIVE_path_primary=""$DRIVE_path"p2"
-                      else
-                        export DRIVE_path_boot=""$DRIVE_path"1"
-                        export DRIVE_path_primary=""$DRIVE_path"2"
-                      fi
+                    if [[ "$DRIVE_path" == *"nvme"* ]]; then
+                      export DRIVE_path_boot=""$DRIVE_path"p1"
+                      export DRIVE_path_primary=""$DRIVE_path"p2"
+                    else
+                      export DRIVE_path_boot=""$DRIVE_path"1"
+                      export DRIVE_path_primary=""$DRIVE_path"2"
                     fi
                   fi 	  	   	  	
                 done
@@ -550,9 +532,10 @@ EOM
           PROCEED="true"
         fi
       else
+        export SWAP_store=$SWAP_size
         export SWAP_size=$DRIVE_size
-        export SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
-        export SWAP_size_gb=$(("$SWAP_size" / 1000))
+        export SWAP_size_ratio=$(awk -v n=$SWAP_store 'BEGIN {printf "%.2f\n", ('"$SWAP_size"')/n}')
+        export SWAP_size_percentage=$(awk -v p=$SWAP_size_ratio -vq=$QTY 'BEGIN{printf "%.2f" ,p * 100}')
         PROCEED="true"
       fi
     else
@@ -569,13 +552,7 @@ EOM
       else
         if [[ "${user_choices[$val]}" == "1" ]]; then
           export BOOT_label=$DRIVE_label
-        elif [[ "${user_choices[$val]}" == "2" ]]; then
-          if [[ "$SWAP_partition" == "true" ]]; then
-            export SWAP_label=$DRIVE_label
-          else
-            export PRIMARY_label=$DRIVE_label
-          fi
-        elif [[ "${user_choices[$val]}" == "3" ]]; then
+        elif [[ "${user_choices[$val]}" == "2" ]] || [[ "${user_choices[$val]}" == "3" ]]; then
           export PRIMARY_label=$DRIVE_label
         fi
         PROCEED="true"
@@ -762,7 +739,7 @@ EOM
       if [[ "$USERNAME_export" == "" ]] && [[ "$1" == "USERS" ]]; then
         CONFIRM="1,2,3,4"
       elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd_export" == "" ]] && [[ "$1" == "PARTITIONS_full" || "$1" == "PARTITIONS_without_swap"	 ]]; then
-        if [[ "$SWAP_partition" == "true" ]]; then
+        if [[ "$ZRAM" == "true" ]]; then
           CONFIRM="3"
         else
           CONFIRM="2"
@@ -801,15 +778,10 @@ EOM
                 echo
                 ;;
               2)
-                if [[ "$SWAP_partition" == "true" ]]; then
+                if [[ "$ZRAM" == "true" ]]; then
                   until [[ "$PROCEED" == "true" ]]; do
                     read -rp "SWAP-partition size (leave empty for default): " DRIVE_size
                     SIZE_check
-                  done
-                  PROCEED="false"
-                  until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "SWAP-partition label (leave empty for default): " DRIVE_label
-                    LABEL_check
                   done
                   PROCEED="false"
                   echo
@@ -832,7 +804,7 @@ EOM
                 fi
                 ;;
               3)
-                if [[ "$SWAP_partition" == "true" ]]; then
+                if [[ "$ZRAM" == "true" ]]; then
                   if ! [[ "$ENCRYPTION_type_password" == "true" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
                       read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
@@ -854,7 +826,7 @@ EOM
           done
           echo
           UPDATE_CHOICES
-          if [[ "$SWAP_partition" == "true" ]]; then
+          if [[ "$ZRAM" == "true" ]]; then
             PRINT_TABLE ',' "$OUTPUT_partitions_full"
           else
             PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
@@ -1036,7 +1008,7 @@ EOM
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
-    if [[ "$SWAP_partition" == "true" ]]; then
+    if [[ "$ZRAM" == "true" ]]; then
       PRINT_TABLE ',' "$OUTPUT_partitions_full"
       CUSTOMIZING_INSTALL PARTITIONS_full
     else
@@ -1062,26 +1034,14 @@ EOM
 }
 
   SCRIPT_05_CREATE_PARTITIONS() {
-    if [[ "$SWAP_partition" == "true" ]]; then
-      parted --script -a optimal "$DRIVE_path" \
-        mklabel gpt \
-        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size_allocated"MiB  \
-        mkpart PRIMARY "$SWAP_size_allocated"MiB 100% 
-    else
-      parted --script -a optimal "$DRIVE_path" \
-        mklabel gpt \
-        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart PRIMARY "$BOOT_size"MiB 100% 
-    fi
+    parted --script -a optimal "$DRIVE_path" \
+      mklabel gpt \
+      mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+      mkpart PRIMARY "$BOOT_size"MiB 100% 
 }
 
   SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
-    if [[ "$SWAP_partition" == "true" ]]; then
-      mkswap -L "$SWAP_label" "$DRIVE_path_swap"
-      swapon "$DRIVE_path_swap"
-    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
@@ -1129,9 +1089,6 @@ EOM
         bcachefs subvolume create "${subvolumes[subvolume]}"
       fi
     done
-    if [[ "$SWAP_file" == "true" ]]; then
-      btrfs subvolume create "/mnt/@/swap"
-    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       touch /mnt/@/.snapshots/1/info.xml
       date=$(date +"%Y-%m-%d %H:%M:%S")
@@ -1151,9 +1108,6 @@ EOF
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
-    if [[ "$SWAP_file" == "true" ]]; then
-      mkdir -p /mnt/.swapvol
-    fi
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
       if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "snapshot" ]]; then
@@ -1170,16 +1124,6 @@ EOF
         fi
       fi
     done
-    if [[ "$SWAP_file" == "true" ]]; then
-      mount -o compress=no,space_cache,ssd,discard=async,subvol=@/swap "$MOUNTPOINT" /mnt/.swapvol
-      truncate -s 0 /mnt/.swapvol/swapfile
-      chattr +C /mnt/.swapvol/swapfile
-      btrfs property set /mnt/.swapvol/swapfile compression none
-      fallocate -l "$SWAP_size_gb" /mnt/.swapvol/swapfile
-      chmod 600 /mnt/.swapvol/swapfile
-      mkswap /mnt/.swapvol/swapfile
-      swapon /mnt/.swapvol/swapfile
-    fi
     sync
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
@@ -1195,6 +1139,9 @@ EOF
       su="opendoas"
     else
       su="sudo"
+    fi
+    if [[ "$ZRAM" == "true" ]]; then
+      zramen="zramen-$INIT_choice"
     fi
     if [[ "$REPLACE_elogind" == "true" ]]; then
       seat="seatd-$INIT_choice"
@@ -1214,25 +1161,12 @@ EOF
       basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                      chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
                      iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware git $ucode $seat $network \
-                     $su $filesystem --ignore mkinitcpio
+                     $su $filesystem $zramen --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
     sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
-    if [[ "$SWAP_partition" == "true" ]]; then
-      export DRIVE_path_swap_clean=$(echo '\'"${DRIVE_path_swap:0:4}"'\'"${DRIVE_path_swap:4:${#DRIVE_path_swap}}"'')
-      sed -i '1,/'"$DRIVE_path_swap_clean"' LABEL='"$SWAP_label"'/!d' /mnt/etc/fstab
-      UUID_swap=$(lsblk -no TYPE,UUID "$DRIVE_path_swap" | awk '$1=="part"{print $2}')
-      cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
-swap     UUID=$UUID_swap  /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
-
-EOF
-      cat << EOF | tee -a /mnt/etc/fstab > /dev/null
-/dev/mapper/swap	none	swap	defaults	0	0
-
-EOF
-    fi
 }
 
   SCRIPT_10_CHROOT() {
@@ -1364,13 +1298,25 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager cronie backlight chronyd; do
-      if [[ "$INIT_choice" == "dinit" ]]; then
-        ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
-      elif [[ "$INIT_choice" == "runit" ]]; then
-        ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
-      elif [[ "$INIT_choice" == "openrc" ]]; then
-        rc-update add $service
+    for service in $network_manager cronie backlight chronyd zramen; do
+      if [[ "$service" == "zramen" ]]; then
+        if [[ "$ZRAM" == "true" ]]; then
+          if [[ "$INIT_choice" == "dinit" ]]; then
+            ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
+          elif [[ "$INIT_choice" == "runit" ]]; then
+            ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
+          elif [[ "$INIT_choice" == "openrc" ]]; then
+            rc-update add $service
+          fi
+        fi
+      else
+        if [[ "$INIT_choice" == "dinit" ]]; then
+          ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
+        elif [[ "$INIT_choice" == "runit" ]]; then
+          ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
+        elif [[ "$INIT_choice" == "openrc" ]]; then
+          rc-update add $service
+        fi
       fi
     done
 }
@@ -1419,17 +1365,7 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        if [[ "$SWAP_file" == "true" ]]; then
-          cd files || exit
-          gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
-          ./btrfs_map_physical /mnt/.swapvol/swapfile > offset
-          SWAP_file_offset=$(sed '2q;d' offset | awk 'NF>1{print $NF}')
-          mv btrfs_map_physical /usr/local/bin
-          cd /install_script || exit
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ resume=UUID='"$UUID_1"'\ resume_offset='"$SWAP_file_offset"'\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
-        else
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
-        fi
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -1488,9 +1424,9 @@ EOF
       chmod u+x /etc/cron.weekly/ssd_trim.sh
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cp scripts/btrfs_scrub.sh /etc/cron.monthly
+      cp scripts/btrfs_maintenance.sh /etc/cron.monthly
       cp scripts/grub-mkconfig /usr/share/libalpm/scripts
-      chmod u+x /etc/cron.monthly/btrfs_scrub.sh
+      chmod u+x /etc/cron.monthly/btrfs_maintenance.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
     cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
@@ -1501,6 +1437,10 @@ EOF
     pacman -U --noconfirm $PACDIFF
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
       cp files/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
+    fi
+    if [[ "$ZRAM" == "true" ]]; then
+      sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen
+      cp configs/zramen {/.secret,/etc/dinit.d/scripts/zramen}
     fi
 }
 
@@ -1545,25 +1485,13 @@ EOF
     if [[ "$DRIVE_path" == "ASK" ]]; then
       MULTISELECT_MENU "${drive_selection[@]}"
     else
-      if [[ "$SWAP_partition" == "true" ]]; then
-        if [[ "$DRIVE_path" == *"nvme"* ]]; then
-          export DRIVE_path_boot=""$DRIVE_path"p1"
-          export DRIVE_path_swap=""$DRIVE_path"p2"
-          export DRIVE_path_primary=""$DRIVE_path"p3"
-        else
-          export DRIVE_path_boot=""$DRIVE_path"1"
-          export DRIVE_path_swap=""$DRIVE_path"2"
-          export DRIVE_path_primary=""$DRIVE_path"3"
-        fi
-      else 
-        if [[ "$DRIVE_path" == *"nvme"* ]]; then
-          export DRIVE_path_boot=""$DRIVE_path"p1"
-          export DRIVE_path_primary=""$DRIVE_path"p2"
-        else
-          export DRIVE_path_boot=""$DRIVE_path"1"
-          export DRIVE_path_primary=""$DRIVE_path"2"
-        fi
-      fi   
+      if [[ "$DRIVE_path" == *"nvme"* ]]; then
+        export DRIVE_path_boot=""$DRIVE_path"p1"
+        export DRIVE_path_primary=""$DRIVE_path"p2"
+      else
+        export DRIVE_path_boot=""$DRIVE_path"1"
+        export DRIVE_path_primary=""$DRIVE_path"2"
+      fi
     fi        
   fi
 

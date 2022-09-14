@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Type = Package
+Target = zramen
+
+[Action]
+Description = Updating zramen config...
+When = PostTransaction
+Exec = /bin/sh -c 'cp /.secrets/zramen /etc/dinit.d/scripts/zramen'
+
