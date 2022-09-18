@@ -1245,7 +1245,7 @@ EOM
     fi
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
-    mkdir -p /mnt/{etc/pacman.d/hooks,.secret,home}
+    mkdir -p /mnt/{etc/pacman.d/hooks,.secret,home,btrbk_snapshots}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
       if ! [[ "${subvolumes[subvolume]}" == "@" ]]; then
@@ -1608,6 +1608,7 @@ EOF
     cd /install_script/packages || exit
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
+    cd $BEGINNER_DIR || exit
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
       cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
     fi
