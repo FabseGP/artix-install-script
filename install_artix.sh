@@ -1225,6 +1225,7 @@ EOM
 
   SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
+    export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
     mount -o noatime,compress=zstd "$MOUNTPOINT" /mnt
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
@@ -1336,11 +1337,10 @@ EOM
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
-    cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
-home "$DRIVE_path_home" none luks,timeout=120
-EOF
     fstabgen -U /mnt >> /mnt/etc/fstab
-    cat << EOF | tee -a /mnt/etc/fstab > /dev/null
+    if [[ "$HOME_partition" == "true" ]] && [[ "$ENCRYPTION_partitions" == "true" ]]; then
+      cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
+home UUID="$UUID_home" none luks,timeout=120
 EOF
 }
 
@@ -1540,7 +1540,7 @@ BOOTLOADER_label=$BOOTLOADER_label
 EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
-      if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
+      if [[ "$ENCRYPTION_partitions" == "true" ]] && ! [[ "$HOME_partition" == "true" ]]; then	
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
         sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
         sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
@@ -1563,6 +1563,11 @@ EOF
       :
     fi
     if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
+      sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
+      grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+      grub-mkconfig -o /boot/grub/grub.cfg
+    fi
+    if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$HOME_partition" == "true" ]]; then
       sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
       grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
       grub-mkconfig -o /boot/grub/grub.cfg
@@ -1618,8 +1623,6 @@ EOF
 exec /usr/bin/btrbk -q run
 EOF
       chmod u+x /etc/{cron.hourly/btrbk,cron.daily/btrbk,cron.weekly/btrfs_health}
-      cp scripts/grub-mkconfig /usr/share/libalpm/scripts
-      chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
     cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/{ranking-mirrors,grub-update}
