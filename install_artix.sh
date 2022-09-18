@@ -6,6 +6,8 @@
   if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then
     openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -in /.encrypt/answer_encrypt.txt -out /.decrypt/decrypt.txt -pass file:/.nothing/nothing.txt
     source /.decrypt/decrypt.txt
+  elif [[ -f "/.nothing/answerfile_wget.txt" ]]; then
+    source /.nothing/answerfile_wget.txt
   else
     source answerfile
   fi
@@ -18,8 +20,9 @@
   # Drives and partitions + encryption
   BOOT_size="300"
   BOOT_label="BOOT"
-  SWAP_size="$((RAM_size * 1000))"
-  SWAP_size_allocated=$(("$SWAP_size"+"$BOOT_size"))
+  SWAP_size="$((RAM_size * 500))"
+  HOME_size="NOT CHOSEN"
+  HOME_label="HOME"
   PRIMARY_size="∞"
   PRIMARY_label="PRIMARY"
   ENCRYPTION_passwd="NOT CHOSEN"
@@ -57,7 +60,7 @@
   fi
 
   # Subvolumes to be created 
-  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" ".snapshots" "root" "grub" "snapshot")
+  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" "root" "grub" "btrbk_snapshots")
 
   # Groups which user is added to 
   export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner"
@@ -143,11 +146,13 @@
     "INTRO"
     "FILESYSTEM_primary_btrfs:BTRFS as filesystem"
     "FILESYSTEM_primary_bcachefs:$BCACHEFS_notice"
+    "HOME_partition:Make a separate /home-partition"
     "ENCRYPTION_partitions:Encryption" 
-    "ZRAM:zram enabled # NOTICE: Compressed block devices in RAM as swap"
+    "ZRAM:Enable zram # NOTICE: Compressed block devices in RAM as swap"
     "INIT_choice_runit:runit as init" 
     "INIT_choice_openrc:openrc as init" 
     "INIT_choice_dinit:dinit as init" 
+    "CHAOTIC_aur:Add CHAOTIC-aur repo" 
     "REPLACE_networkmanager:Replace NetworkManager with connman # NOTICE: connman doesn't conflict with NetworkManager"
     "REPLACE_sudo:Replace sudo with doas # NOTICE: doas doesn't conflict with sudo" 
     "REPLACE_elogind:Replace elogind with seatd # NOTICE: a elogind-dummy-package is installed, though NetworkManager requires elogind"
@@ -159,8 +164,10 @@
     "${DRIVES[@]}"
 )
 
-  PARTITIONS="VALUE,BOOT-PARTITION (1),ZRAM-SIZE (2),PRIMARY-PARTITION (3)"
-  PARTITIONS_without_swap="VALUE,BOOT-PARTITION (1),PRIMARY-PARTITION (2)"
+  PARTITIONS_full="VALUE,BOOT-PARTITION (1),HOME-PARTITION (2),ROOT-PARTITION (3),ZRAM-SIZE (4)"
+  PARTITIONS_without_home="VALUE,BOOT-PARTITION (1),ROOT-PARTITION (2),ZRAM-SIZE (3)"
+  PARTITIONS_without_swap="VALUE,BOOT-PARTITION (1),HOME-PARTITION (2),ROOT-PARTITION (3)"
+  PARTITIONS_minimal="VALUE,BOOT-PARTITION (1),ROOT-PARTITION (2)"
   LOCALS="VALUE,TIMEZONE (1),LANGUAGES (2),KEYMAP (3),HOSTNAME (4)"
   USERS="VALUE,root (1),personal (2)"
   MISCELLANEOUS=",BOOTLOADER-ID (1),ADDITIONAL PACKAGES (2),POST INSTALL SCRIPT (3)"
@@ -172,15 +179,29 @@
   UPDATE_CHOICES() {
 
     read -r -d '' OUTPUT_partitions_full << EOM
-$PARTITIONS
-SIZE:,$BOOT_size MB,$SWAP_size MB, $PRIMARY_size MB
-LABEL:,$BOOT_label,,$PRIMARY_label
+$PARTITIONS_full
+SIZE:,$BOOT_size MB,$HOME_size GB,$PRIMARY_size GB,$SWAP_size MB
+LABEL:,$BOOT_label,$HOME_label,$PRIMARY_label
 ENCRYPTION-password:,,,$ENCRYPTION_passwd
+EOM
+
+    read -r -d '' OUTPUT_partitions_without_home << EOM
+$PARTITIONS_without_home
+SIZE:,$BOOT_size MB,$PRIMARY_size GB,$SWAP_size MB
+LABEL:,$BOOT_label,$PRIMARY_label
+ENCRYPTION-password:,,$ENCRYPTION_passwd
 EOM
 
     read -r -d '' OUTPUT_partitions_without_swap << EOM
 $PARTITIONS_without_swap
-SIZE:,$BOOT_size MB, $PRIMARY_size MB
+SIZE:,$BOOT_size MB,$HOME_size GB,$PRIMARY_size GB
+LABEL:,$BOOT_label,$HOME_label,$PRIMARY_label
+ENCRYPTION-password:,,,$ENCRYPTION_passwd
+EOM
+
+    read -r -d '' OUTPUT_partitions_minimal << EOM
+$PARTITIONS_minimal
+SIZE:,$BOOT_size MB,$PRIMARY_size GB
 LABEL:,$BOOT_label,$PRIMARY_label
 ENCRYPTION-password:,,$ENCRYPTION_passwd
 EOM
@@ -408,10 +429,10 @@ EOM
           space)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
+              COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then
-                eval selected[{4..6}]=false
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then
+                eval selected[{5..7}]=false
                 toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then
                 eval selected[{0..1}]=false
@@ -437,7 +458,7 @@ EOM
           enter)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              export COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
+              export COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
               export COUNT_intro="${#selected[@]}"
               export values=("${selected[@]}")
@@ -475,14 +496,33 @@ EOM
                     PATH_cleaned=$(echo "${options[j]}" | cut -d'|' -f 1)
                     export "DRIVE_path"="$PATH_cleaned"
                     if [[ "$DRIVE_path" == *"nvme"* ]]; then
-                      export DRIVE_path_boot=""$DRIVE_path"p1"
-                      export DRIVE_path_primary=""$DRIVE_path"p2"
+                      if [[ "$HOME_partition" == "true" ]]; then
+                        export DRIVE_path_boot=""$DRIVE_path"p1"
+                        export DRIVE_path_home=""$DRIVE_path"p2"
+                        export DRIVE_path_primary=""$DRIVE_path"p3"
+                      else
+                        export DRIVE_path_boot=""$DRIVE_path"p1"
+                        export DRIVE_path_primary=""$DRIVE_path"p2"
+                      fi
                     else
-                      export DRIVE_path_boot=""$DRIVE_path"1"
-                      export DRIVE_path_primary=""$DRIVE_path"2"
+                      if [[ "$HOME_partition" == "true" ]]; then
+                        export DRIVE_path_boot=""$DRIVE_path"1"
+                        export DRIVE_path_home=""$DRIVE_path"2"
+                        export DRIVE_path_primary=""$DRIVE_path"3"
+                      else
+                        export DRIVE_path_boot=""$DRIVE_path"1"
+                        export DRIVE_path_primary=""$DRIVE_path"2"
+                      fi
                     fi
                   fi 	  	   	  	
                 done
+                SIZE_decimal=$(df -h --output=size "$DRIVE_path")
+                SIZE_integer=$(awk -v v="$SIZE_decimal" 'BEGIN{printf "%d", v}')        
+                ARRAY_string="$SIZE_integer"
+                IFS=' '
+                SIZE_array=( $ARRAY_string )
+                SIZE_extracted=$("${SIZE_array[1]}")
+                SIZE_cleaned=$("${SIZE_extracted//G}")
                 PROCEED="true"
               fi
             fi
@@ -516,27 +556,43 @@ EOM
 # Functions for checking user-input
 
   SIZE_check() {
+    INPUT_type="$1"
     if ! [[ "$DRIVE_size" == "" ]]; then
       if ! [[ "$DRIVE_size" =~ ^[0-9]+$ ]]; then
         echo
         PRINT_MESSAGE "Only numbers please!"
         PROCEED="false"
-      elif [[ "${user_choices[$val]}" == "1" ]]; then
-        if [[ "$DRIVE_size" -le "300" ]]; then
-          echo
-          PRINT_MESSAGE "Minimum 300 MB is required for the boot-partition!"
-          echo
-          PROCEED="false"
-        else
-          export BOOT_size=$DRIVE_size
+      else 
+        if [[ "$INPUT_type" == "BOOT" ]]; then
+          if [[ "$DRIVE_size" -lt "300" ]]; then
+            echo
+            PRINT_MESSAGE "Minimum 300 MB is required for the boot-partition!"
+            echo
+            PROCEED="false"
+          else
+            export BOOT_size=$DRIVE_size
+            PROCEED="true"
+          fi
+        elif [[ "$INPUT_type" == "HOME" ]]; then
+          if [[ "$DRIVE_size" -gt "$SIZE_cleaned" ]]; then
+            PRINT_MESSAGE "Invalid size; bigger than whole drive!"
+            echo
+            PROCEED="false"            
+          else
+            export HOME_size=$DRIVE_size
+            PROCEED="true"
+          fi
+        elif [[ "$INPUT_type" == "ZRAM" ]]; then
+          export SWAP_store=$SWAP_size
+          export SWAP_size=$DRIVE_size
+          export SWAP_size_ratio=$(awk -v n=$SWAP_store 'BEGIN {printf "%.2f\n", ('"$SWAP_size"')/n}')
+          export SWAP_size_decimal=$(awk -v p=$SWAP_size_ratio -vq=$QTY 'BEGIN{printf "%.2f" ,p * 100}')
+          export SWAP_size_percentage=$(awk -v v="$SWAP_size_decimal" 'BEGIN{printf "%d", v}')        
+          if [[ "$SWAP_size_percentage" -gt 50 ]]; then
+            SWAP_size_percentage=50
+          fi
           PROCEED="true"
         fi
-      else
-        export SWAP_store=$SWAP_size
-        export SWAP_size=$DRIVE_size
-        export SWAP_size_ratio=$(awk -v n=$SWAP_store 'BEGIN {printf "%.2f\n", ('"$SWAP_size"')/n}')
-        export SWAP_size_percentage=$(awk -v p=$SWAP_size_ratio -vq=$QTY 'BEGIN{printf "%.2f" ,p * 100}')
-        PROCEED="true"
       fi
     else
       PROCEED="true"
@@ -544,17 +600,22 @@ EOM
 }
 
   LABEL_check() {
+    INPUT_type="$1"
     if ! [[ "$DRIVE_label" == "" ]]; then
-      if [[ "${user_choices[$val]}" == "1" ]] && [[ "${#DRIVE_label}" -ge "11" ]]; then
-        echo
-        PRINT_MESSAGE "Maximum 11 characters is allowed for FAT32!"
-        PROCEED="false"
-      else
-        if [[ "${user_choices[$val]}" == "1" ]]; then
+      if [[ "$INPUT_type" == "BOOT" ]]; then
+        if [[ "${#DRIVE_label}" -ge "11" ]]; then
+          echo
+          PRINT_MESSAGE "Maximum 11 characters is allowed for FAT32!"
+          PROCEED="false"
+        else
           export BOOT_label=$DRIVE_label
-        elif [[ "${user_choices[$val]}" == "2" ]] || [[ "${user_choices[$val]}" == "3" ]]; then
-          export PRIMARY_label=$DRIVE_label
+          PROCEED="true"
         fi
+      elif [[ "$INPUT_type" == "HOME" ]]; then
+        export HOME_label=$DRIVE_label
+        PROCEED="true"
+      elif [[ "$INPUT_type" == "PRIMARY" ]]; then
+        export PRIMARY_label=$DRIVE_label
         PROCEED="true"
       fi
     else
@@ -736,90 +797,154 @@ EOM
       PROCEED="false"
       echo
       IFS=
-      if [[ "$USERNAME_export" == "" ]] && [[ "$1" == "USERS" ]]; then
-        CONFIRM="1,2,3,4"
-      elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd_export" == "" ]] && [[ "$1" == "PARTITIONS_full" || "$1" == "PARTITIONS_without_swap"	 ]]; then
-        if [[ "$ZRAM" == "true" ]]; then
-          CONFIRM="3"
-        else
-          CONFIRM="2"
-        fi
-        ENCRYPTION_type_password="true"
-      elif [[ "$POST_script" == "true" ]] && [[ "$POST_script_export" == "" ]] && [[ "$1" == "MISCELLANEOUS" ]]; then
-        CONFIRM="3"
-      else
-        read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
-      fi
+      read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
-        CONFIRM_proceed="true"
+        if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
+          PRINT_MESSAGE "PLEASE CHOOSE AN ENCRYPTION-PASSWORD!"
+          if [[ "$ZRAM" == "true" ]]; then
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_full"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_home"
+            fi
+          else
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_minimal"
+            fi
+          fi     
+        elif [[ "$HOME_partition" == "true" ]] && [[ "$HOME_size" == "NOT CHOSEN" ]]; then
+          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
+          if [[ "$ZRAM" == "true" ]]; then
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_full"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_home"
+            fi
+          else
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_minimal"
+            fi
+          fi 
+        elif [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then
+          PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!" 
+          PRINT_TABLE ',' "$OUTPUT_users"
+        elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then
+          PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!" 
+          PRINT_TABLE ',' "$OUTPUT_users"
+        else
+          CONFIRM_proceed="true"
+        fi
       elif [[ "$CONFIRM" == "RETURN TO START" ]]; then
         ./$(basename "$0") restart && exit
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
         if [[ "$CONFIRM" == "A" ]]; then
           CONFIRM="1,2,3,4"
         fi
-        if [[ "$1" == "PARTITIONS_full" ]] || [[ "$1" == "PARTITIONS_without_swap" ]]; then
+        if [[ "$1" == "PARTITIONS_full" ]] || [[ "$1" == "PARTITIONS_without_home" ]] || [[ "$1" == "PARTITIONS_without_swap" ]] || [[ "$1" == "PARTITIONS_minimal" ]]; then
           IFS=','
           read -ra user_choices <<< "$CONFIRM"
           for ((val=0; val<"${#user_choices[@]}"; val++)); do 
             case ${user_choices[$val]} in
               1)           
                 until [[ "$PROCEED" == "true" ]]; do
-                  read -rp "BOOT-partition size (leave empty for default): " DRIVE_size
-                  SIZE_check
+                  read -rp "BOOT-partition size in MB (leave empty for default): " DRIVE_size
+                  SIZE_check BOOT
                 done
                 PROCEED="false"
                 until [[ "$PROCEED" == "true" ]]; do
                   read -rp "BOOT-partition label (leave empty for default): " DRIVE_label
-                  LABEL_check
+                  LABEL_check BOOT
                 done
                 PROCEED="false"
                 echo
                 ;;
               2)
-                if [[ "$ZRAM" == "true" ]]; then
+                if [[ "$HOME_partition" == "true" ]]; then
                   until [[ "$PROCEED" == "true" ]]; do
-                    read -rp "SWAP-partition size (leave empty for default): " DRIVE_size
-                    SIZE_check
+                    read -rp "HOME-partition size in GB: " DRIVE_size
+                    SIZE_check HOME
                   done
                   PROCEED="false"
+                  until [[ "$PROCEED" == "true" ]]; do
+                    read -rp "HOME-partition label (leave empty for default): " DRIVE_label
+                    LABEL_check HOME
+                  done
+                  PROCEED="false" 
                   echo
                 else
-                  if ! [[ "$ENCRYPTION_type_password" == "true" ]]; then
+                  if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
                       read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
-                      LABEL_check
+                      LABEL_check PRIMARY
                     done
                   fi
                   PROCEED="false"
                   if [[ "$ENCRYPTION_partitions" == "true" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
-                      read -rp "Encryption-password: " ENCRYPTION_passwd_export
-                      ENCRYPTION_check
+                      if ! [[ "$ENCRYPTION_passwd" == "" ]] && ! [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
+                        read -rp "Encryption-password (leave empty for unchanged): " ENCRYPTION_passwd_export
+                        if [[ "$ENCRYPTION_passwd_export" == "" ]]; then
+                          PROCEED="true"
+                        else
+                          ENCRYPTION_check
+                        fi
+                      else
+                        read -rp "Encryption-password: " ENCRYPTION_passwd_export
+                        ENCRYPTION_check
+                      fi
                     done
                     PROCEED="false"
-                    ENCRYPTION_type_password=""
                   fi
                 fi
                 ;;
               3)
-                if [[ "$ZRAM" == "true" ]]; then
-                  if ! [[ "$ENCRYPTION_type_password" == "true" ]]; then
-                    until [[ "$PROCEED" == "true" ]]; do
-                      read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
-                      LABEL_check
-                    done
-                  fi
+                if [[ "$HOME_partition" == "true" ]]; then
+                  export PRIMARY_size=$((SIZE_cleaned-HOME_size))
+                  until [[ "$PROCEED" == "true" ]]; do
+                    read -rp "PRIMARY-label (leave empty for default): " DRIVE_label
+                    LABEL_check PRIMARY
+                  done
                   PROCEED="false"
                   if [[ "$ENCRYPTION_partitions" == "true" ]]; then
                     until [[ "$PROCEED" == "true" ]]; do
-                      read -rp "Encryption-password: " ENCRYPTION_passwd_export
-                      ENCRYPTION_check
+                      if ! [[ "$ENCRYPTION_passwd" == "" ]] && ! [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
+                        read -rp "Encryption-password (leave empty for unchanged): " ENCRYPTION_passwd_export
+                        if [[ "$ENCRYPTION_passwd_export" == "" ]]; then
+                          PROCEED="true"
+                        else
+                          ENCRYPTION_check
+                        fi
+                      else
+                        read -rp "Encryption-password: " ENCRYPTION_passwd_export
+                        ENCRYPTION_check
+                      fi
                     done
                     PROCEED="false"
-                    ENCRYPTION_type_password=""
                   fi
+                else
+                  if [[ "$ZRAM" == "true" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do
+                      read -rp "SWAP-partition size (leave empty for default): " DRIVE_size
+                      SIZE_check ZRAM
+                    done
+                    PROCEED="false"
+                    echo
+                  fi
+                fi
+                ;;
+              4)
+                if [[ "$ZRAM" == "true" ]]; then
+                  until [[ "$PROCEED" == "true" ]]; do
+                    read -rp "SWAP-partition size (leave empty for default): " DRIVE_size
+                    SIZE_check ZRAM
+                  done
+                  PROCEED="false"
+                  echo
                 fi
                 ;;
             esac
@@ -827,9 +952,17 @@ EOM
           echo
           UPDATE_CHOICES
           if [[ "$ZRAM" == "true" ]]; then
-            PRINT_TABLE ',' "$OUTPUT_partitions_full"
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_full"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_home"
+            fi
           else
-            PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
+            if [[ "$HOME_partition" == "true" ]]; then
+              PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
+            else
+              PRINT_TABLE ',' "$OUTPUT_partitions_minimal"
+            fi
           fi
         elif [[ "$1" == "LOCALS" ]]; then
           IFS=','
@@ -1009,11 +1142,21 @@ EOM
     MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
     if [[ "$ZRAM" == "true" ]]; then
-      PRINT_TABLE ',' "$OUTPUT_partitions_full"
-      CUSTOMIZING_INSTALL PARTITIONS_full
+      if [[ "$HOME_partition" == "true" ]]; then
+        PRINT_TABLE ',' "$OUTPUT_partitions_full"
+        CUSTOMIZING_INSTALL PARTITIONS_full
+      else
+        PRINT_TABLE ',' "$OUTPUT_partitions_without_home"
+        CUSTOMIZING_INSTALL PARTITIONS_without_home
+      fi
     else
-      PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
-      CUSTOMIZING_INSTALL PARTITIONS_without_swap
+      if [[ "$HOME_partition" == "true" ]]; then
+        PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
+        CUSTOMIZING_INSTALL PARTITIONS_without_swap
+      else
+        PRINT_TABLE ',' "$OUTPUT_partitions_minimal"
+        CUSTOMIZING_INSTALL PARTITIONS_minimal
+      fi
     fi
     PRINT_MESSAGE "${messages[10]}" 
     PRINT_TABLE ',' "$OUTPUT_locals"
@@ -1034,18 +1177,29 @@ EOM
 }
 
   SCRIPT_05_CREATE_PARTITIONS() {
-    parted --script -a optimal "$DRIVE_path" \
-      mklabel gpt \
-      mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-      mkpart PRIMARY "$BOOT_size"MiB 100% 
+    if [[ "$HOME_partition" == "true" ]]; then
+      parted --script -a optimal "$DRIVE_path" \
+        mklabel gpt \
+        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+        mkpart HOME "$BOOT_size"MiB $HOME_size \
+        mkpart PRIMARY "$HOME_size"MiB 100% 
+    else
+      parted --script -a optimal "$DRIVE_path" \
+        mklabel gpt \
+        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+        mkpart PRIMARY "$BOOT_size"MiB 100% 
+    fi
 }
 
   SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
+    if [[ "$HOME_partition" == "true" ]]; then
+      mkfs.btrfs -f -L "$HOME_label" "$DRIVE_path_home"
+    fi 
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
-        echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
-        echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --perf-no_write_workqueue --persistent "$DRIVE_path_primary" cryptroot
+        echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --size 4196 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
+        echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --persistent "$DRIVE_path_primary" cryptroot
         mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
         MOUNTPOINT="/dev/mapper/cryptroot"
       else
@@ -1071,50 +1225,41 @@ EOM
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
             btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"
             chattr +C "${subvolumes[subvolume]}"
-          elif [[ "${subvolumes[subvolume]}" == ".snapshots" ]]; then
+          elif [[ "${subvolumes[subvolume]}" == "btrbk_snapshots" ]]; then
             btrfs subvolume create "/mnt/@/.snapshots"
-            mkdir -p /mnt/@/.snapshots/1
-          elif [[ "${subvolumes[subvolume]}" == "snapshot" ]]; then
-            btrfs subvolume create "/mnt/@/.snapshots/1/snapshot"
           elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
             btrfs subvolume create "/mnt/@/boot/grub"
+          elif [[ "${subvolumes[subvolume]}" == "home" ]]; then 
+            btrfs subvolume create "/mnt/@/home"
           else
             btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"
           fi
         else
           btrfs subvolume create "/mnt/${subvolumes[subvolume]}"
-          mkdir -p /mnt/@/{var,boot,efi}
+          mkdir -p /mnt/@/{var,boot}
         fi
       elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
         bcachefs subvolume create "${subvolumes[subvolume]}"
       fi
     done
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      touch /mnt/@/.snapshots/1/info.xml
-      date=$(date +"%Y-%m-%d %H:%M:%S")
-      cat << EOF | tee -a /mnt/@/.snapshots/1/info.xml > /dev/null
-<?xml version="1.0"?>
-<snapshot>
-<type>single</type>
-	<num>1</num>
-	<date>$date</date>
-	<description>First snapshot created at installation</description>
-</snapshot>
-EOF
-      btrfs subvolume set-default "$(btrfs subvolume list /mnt | grep "@/.snapshots/1/snapshot" | grep -oP '(?<=ID )[0-9]+')" /mnt
-      btrfs quota enable /mnt
-      btrfs qgroup create 1/0 /mnt
+      :
     fi
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
-    mkdir -p /mnt/{etc/pacman.d/hooks,.secret}
+    mkdir -p /mnt/{etc/pacman.d/hooks,.secret,home}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
-      if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "snapshot" ]]; then
+      if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "btrbk_snapshots" ]]; then
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
             mount -o noatime,nodatacow,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+          if [[ "${subvolumes[subvolume]}" == "home" ]]; then
+            if ! [[ "$HOME_partition" == "true" ]]; then
+              mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+            fi
+          fi
           else
             mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
           fi  
@@ -1127,6 +1272,9 @@ EOF
     sync
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
+    if [[ "$HOME_partition" == "true" ]]; then
+      mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
+    fi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
@@ -1158,19 +1306,32 @@ EOF
     else
       filesystem="bcachefs-tools"
     fi
-      basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
-                     chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
-                     iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware git $ucode $seat $network \
-                     $su $filesystem $zramen --ignore mkinitcpio
+    if [[ "$CHAOTIC_aur" == "true" ]]; then
+      cd "$BEGINNER_DIR" || exit
+      pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com
+      pacman-key --lsign-key FBA220DFC880C036
+      pacman --noconfirm -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+      cp /install_script/configs/pacman_chaotic.conf /etc/pacman.conf
+      kernel="linux-tkg-cfs"
+      kernel_headers="linux-tkg-cfs-headers"
+    else
+      kernel="linux-zen"
+      kernel_headers="linux-zen-headers"
+    fi
+    basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
+                   chrony-$INIT_choice booster zstd realtime-privileges efibootmgr grub base base-devel dosfstools \
+                   iptables-nft pacman-contrib $kernel $kernel_headers linux-firmware git $ucode $seat $network \
+                   $su $filesystem $zramen --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
-    sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
+    #sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
 }
 
   SCRIPT_10_CHROOT() {
     mkdir /mnt/install_script
+    cd "$BEGINNER_DIR" || exit
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
       if [[ "${functions[function]}" == *"SYSTEM"* ]]; then
@@ -1225,6 +1386,12 @@ EOF
     cd /install_script/scripts || exit
     chmod u+x repositories.sh
     ./repositories.sh
+    if [[ "$CHAOTIC_aur" == "true" ]]; then
+      pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com
+      pacman-key --lsign-key FBA220DFC880C036
+      pacman --noconfirm -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
+      cp /install_script/configs/pacman_chaotic.conf /etc/pacman.conf
+    fi
     if ! [[ "$PACKAGES_additional" == "NONE" ]]; then
       pacman -S --noconfirm --needed "$PACKAGES_additional"
     fi
@@ -1330,33 +1497,26 @@ EOF
     fi
 }
 
-  SYSTEM_08_SNAPPER() {
+  SYSTEM_08_SNAPSHOTS() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      pacman -S --noconfirm snap-pac
+      cd /install_script/packages || exit
+      BTRBK="$(ls -- *paru-*)"
+      pacman -U --noconfirm $BTRBK
       cd /install_script || exit
-      umount /.snapshots
-      rm -r /.snapshots
-      snapper --no-dbus -c root create-config /
-      cp configs/snapper.conf /etc/snapper/configs/root
-      sed -i "s/USERNAME/$USERNAME/" /etc/snapper/configs/root
-      btrfs subvolume delete /.snapshots
-      mkdir /.snapshots
-      mount -a
-      chmod a+rx /.snapshots
-      chown :wheel /.snapshots
-      cp configs/snap-pac.ini /etc/snap-pac.ini
-      sed -i 's/INIT/'"$INIT_choice"'/' hooks/05-snap-pac-pre.hook
-      sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz-snap-pac-post.hook
-      sed -i 's/INIT/'"$INIT_choice"'/' hooks/zz_snap-pac-grub-post.hook
-      cp hooks/* /etc/pacman.d/hooks
-      cp hooks/* /.secret
+      cp configs/btrbk.conf /etc/btrbk/btrbk.conf
+    cat << EOF | tee -a /.secret/bootloader-id > /dev/null
+#!/bin/sh
+BOOTLOADER_label=$BOOTLOADER_label
+EOF
+#!/bin/sh
+exec /usr/bin/btrbk -q snapshot
     fi
 }
 
   SYSTEM_09_BOOTLOADER() {
     cd /install_script || exit
-    cp files/10_linux /etc/grub.d/10_linux
-    cp files/10_linux /.secret
+    cp configs/10_linux /etc/grub.d/10_linux
+    cp configs/10_linux /.secret
     touch /.secret/bootloader-id
     cat << EOF | tee -a /.secret/bootloader-id > /dev/null
 #!/bin/sh
@@ -1413,30 +1573,46 @@ EOF
     sed -i 's/nullok//g' /etc/pam.d/system-auth
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su
     sed -i 's/#auth           required        pam_wheel.so use_uid/auth           required        pam_wheel.so use_uid/g' /etc/pam.d/su-l
-    echo 'PRUNENAMES = ".snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
+    echo 'PRUNENAMES = "btrbk_snapshots"' >> /etc/updatedb.conf # Prevent snapshots from being indexed
     if [[ "$INIT_choice" == "openrc" ]]; then
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
     fi
-    if [[ "$(lsblk --discard)" ]]; then
-      cp scripts/ssd_trim.sh /etc/cron.weekly
-      chmod u+x /etc/cron.weekly/ssd_trim.sh
-    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cp scripts/btrfs_maintenance.sh /etc/cron.monthly
+      touch /etc/cron.weekly/btrfs_health
+      touch /etc/cron.hourly/btrbk
+      touch /etc/cron.daily/btrbk
+      cat << EOF | tee -a /etc/cron.weekly/btrfs_health > /dev/null
+#!/bin/sh
+
+# Perform a btrfs scrub on the root filesystem
+  btrfs scrub start -c 2 -n 4 /
+
+# Perform a btrfs balance on the root filesystem
+  btrfs balance start -dusage=10 -musage=5
+  btrfs balance start -dusage=20 -musage=10
+EOF
+      cat << EOF | tee -a /etc/cron.hourly/btrbk > /dev/null
+#!/bin/sh
+exec /usr/bin/btrbk -q snapshot
+EOF
+      cat << EOF | tee -a /etc/cron.daily/btrbk > /dev/null
+#!/bin/sh
+exec /usr/bin/btrbk -q run
+EOF
+      chmod u+x /etc/{cron.hourly/btrbk,cron.daily/btrbk,cron.weekly/btrfs_health}
       cp scripts/grub-mkconfig /usr/share/libalpm/scripts
-      chmod u+x /etc/cron.monthly/btrfs_maintenance.sh
       chmod 755 /usr/share/libalpm/scripts/grub-mkconfig
     fi
     cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/{ranking-mirrors,grub-update}
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
-    cd /install_script/packages
+    cd /install_script/packages || exit
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
-      cp files/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
+      cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
     fi
     if [[ "$ZRAM" == "true" ]]; then
       sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen
@@ -1451,7 +1627,7 @@ EOF
       if [[ "$REPLACE_sudo" == "true" ]]; then
         echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null
       else
-        echo "$USERNAME ALL=(ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
+        echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
       fi
       su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
       rm -rf /home/$USERNAME/$basename_clean
@@ -1486,13 +1662,32 @@ EOF
       MULTISELECT_MENU "${drive_selection[@]}"
     else
       if [[ "$DRIVE_path" == *"nvme"* ]]; then
-        export DRIVE_path_boot=""$DRIVE_path"p1"
-        export DRIVE_path_primary=""$DRIVE_path"p2"
+        if [[ "$HOME_partition" == "true" ]]; then
+          export DRIVE_path_boot=""$DRIVE_path"p1"
+          export DRIVE_path_home=""$DRIVE_path"p2"
+          export DRIVE_path_primary=""$DRIVE_path"p3"
+        else
+          export DRIVE_path_boot=""$DRIVE_path"p1"
+          export DRIVE_path_primary=""$DRIVE_path"p2"
+        fi
       else
-        export DRIVE_path_boot=""$DRIVE_path"1"
-        export DRIVE_path_primary=""$DRIVE_path"2"
+        if [[ "$HOME_partition" == "true" ]]; then
+          export DRIVE_path_boot=""$DRIVE_path"1"
+          export DRIVE_path_home=""$DRIVE_path"2"
+          export DRIVE_path_primary=""$DRIVE_path"3"
+        else
+          export DRIVE_path_boot=""$DRIVE_path"1"
+          export DRIVE_path_primary=""$DRIVE_path"2"
+        fi
       fi
-    fi        
+    fi  
+    SIZE_decimal=$(df -h --output=size "$DRIVE_path")
+    SIZE_integer=$(awk -v v="$SIZE_decimal" 'BEGIN{printf "%d", v}')        
+    ARRAY_string="$SIZE_integer"
+    IFS=' '
+    SIZE_array=( $ARRAY_string )
+    SIZE_extracted=$("${SIZE_array[1]}")
+    SIZE_cleaned=$("${SIZE_extracted//G}")      
   fi
 
   # Executing functions
