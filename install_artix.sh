@@ -60,7 +60,7 @@
   fi
 
   # Subvolumes to be created 
-  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" "root" "grub" "btrbk_snapshots")
+  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" "root" "grub")
 
   # Groups which user is added to 
   export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner"
@@ -1225,8 +1225,6 @@ EOM
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
             btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"
             chattr +C "${subvolumes[subvolume]}"
-          elif [[ "${subvolumes[subvolume]}" == "btrbk_snapshots" ]]; then
-            btrfs subvolume create "/mnt/@/.snapshots"
           elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
             btrfs subvolume create "/mnt/@/boot/grub"
           elif [[ "${subvolumes[subvolume]}" == "home" ]]; then 
@@ -1250,7 +1248,7 @@ EOM
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret,home}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
-      if ! [[ "${subvolumes[subvolume]}" == "@" || "${subvolumes[subvolume]}" == "btrbk_snapshots" ]]; then
+      if ! [[ "${subvolumes[subvolume]}" == "@" ]]; then
         if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
           mkdir -p /mnt/"${subvolumes[subvolume]}"
           if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
