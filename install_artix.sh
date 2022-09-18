@@ -1342,6 +1342,7 @@ EOM
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 home UUID="$UUID_home" none luks,timeout=120
 EOF
+    fi
 }
 
   SCRIPT_10_CHROOT() {
