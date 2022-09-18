@@ -1279,7 +1279,7 @@ EOM
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$HOME_partition" == "true" ]]; then
-      if [["$ENCRYPTION_partitions" == "true" ]]; then
+      if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         mount -o noatime,compress=zstd,discard=async /dev/mapper/cryptroot /mnt/home
       else
         mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
@@ -1535,7 +1535,7 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        if [["$HOME_partition" == "true" ]]; then
+        if [[ "$HOME_partition" == "true" ]]; then
           sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ cryptdevice='"$DRIVE_path_home"':cryptroot\ rd.luks.allow-discards/'
           grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
           grub-mkconfig -o /boot/grub/grub.cfg
