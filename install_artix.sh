@@ -1200,8 +1200,8 @@ EOM
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         if [[ "$HOME_partition" == "true" ]]; then
           echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_home"
-          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_home" cryptroot
-          mkfs.btrfs -f -L "$HOME_label" /dev/mapper/cryptroot
+          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_home" crypthome
+          mkfs.btrfs -f -L "$HOME_label" /dev/mapper/crypthome
           mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
           MOUNTPOINT="$DRIVE_path_primary"
         else
@@ -1280,11 +1280,11 @@ EOM
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$HOME_partition" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
-        mount -o noatime,compress=zstd,discard=async /dev/mapper/cryptroot /mnt/home
+        mount -o noatime,compress=zstd,discard=async /dev/mapper/crypthome /mnt/home
       else
         mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
       fi
-      mkdir btrbk_snapshots
+      mkdir /mnt/home/btrbk_snapshots
     fi
 }	
  
@@ -1336,7 +1336,12 @@ EOM
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
+    cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
+home "$DRIVE_path_home" none luks,timeout=120
+EOF
     fstabgen -U /mnt >> /mnt/etc/fstab
+    cat << EOF | tee -a /mnt/etc/fstab > /dev/null
+EOF
 }
 
   SCRIPT_10_CHROOT() {
@@ -1384,7 +1389,7 @@ EOF
 
   SYSTEM_02_USERS() {
     echo "root:$ROOT_passwd" | chpasswd
-    useradd -m -g users -G "$USER_groups" "$USERNAME"
+    useradd -m  -G "$USER_groups" "$USERNAME"
     if [[ "$REPLACE_elogind" == "true" ]]; then
       groupadd seatd
       usermod -a -G seatd "$USERNAME"
@@ -1419,6 +1424,7 @@ alias rm='rm -i'
 
 EOF
     mkdir -p /home/"$USERNAME"
+    chown -R "$USERNAME": /home/"$USERNAME"
     touch /home/"$USERNAME"/.bashrc      
     cat << EOF | tee -a /home/"$USERNAME"/.bashrc > /dev/null    
 # Redirect yay to paru + making rm safer
@@ -1535,29 +1541,23 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        if [[ "$HOME_partition" == "true" ]]; then
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ cryptdevice='"$DRIVE_path_home"':cryptroot\ rd.luks.allow-discards"/'
-          grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
-          grub-mkconfig -o /boot/grub/grub.cfg
-        else
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
-          sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
-          sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
-          grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
-          touch grub-pre.cfg
-          cat << EOF | tee -a grub-pre.cfg > /dev/null
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
+        sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
+        sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
+        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+        touch grub-pre.cfg
+        cat << EOF | tee -a grub-pre.cfg > /dev/null
 cryptomount -u $UUID_2 
 set root=crypto0
 set prefix=(crypto0)/@/boot/grub
 insmod normal
 normal
 EOF
-          grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
-          cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
-          grub-mkconfig -o /boot/grub/grub.cfg
-          cp grub-pre.cfg /.secret
-          rm -rf {/tmp/image,grub-pre.cfg}
-        fi
+        grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
+        cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
+        grub-mkconfig -o /boot/grub/grub.cfg
+        cp grub-pre.cfg /.secret
+        rm -rf {/tmp/image,grub-pre.cfg}
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
       :
