@@ -1536,11 +1536,11 @@ EOF
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
         if [[ "$HOME_partition" == "true" ]]; then
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ cryptdevice='"$DRIVE_path_home"':cryptroot\ rd.luks.allow-discards/'
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ cryptdevice='"$DRIVE_path_home"':cryptroot\ rd.luks.allow-discards"/'
           grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
           grub-mkconfig -o /boot/grub/grub.cfg
         else
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/'' /etc/default/grub
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
           sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
           sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
           grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
