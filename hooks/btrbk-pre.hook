@@ -1,0 +1,13 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Operation = Remove
+Type = Package
+Target = grub
+Target = booster
+Target = linux-*
+
+[Action]
+Description = Performing btrbk pre-pacman snapshots for the following configurations...
+When = PreTransaction
+Exec = /usr/bin/btrbk run -q / --preserve
