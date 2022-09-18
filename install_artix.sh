@@ -1340,7 +1340,7 @@ EOM
     fstabgen -U /mnt >> /mnt/etc/fstab
     if [[ "$HOME_partition" == "true" ]] && [[ "$ENCRYPTION_partitions" == "true" ]]; then
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
-home UUID="$UUID_home" none luks,timeout=120
+home UUID=$UUID_home none luks,timeout=120
 EOF
     fi
 }
@@ -1395,7 +1395,8 @@ EOF
       groupadd seatd
       usermod -a -G seatd "$USERNAME"
     fi
-    echo "$USERNAME:$USER_passwd" | chpasswd
+    #echo "$USERNAME:$USER_passwd" | chpasswd
+    echo -e "$USER_passwd\n$USER_passwd\n" | passwd $USERNAME
 }
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
