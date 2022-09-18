@@ -1326,7 +1326,6 @@ EOM
 
   SCRIPT_09_FSTAB_GENERATION() {
     fstabgen -U /mnt >> /mnt/etc/fstab
-    #sed -i 's/,subvolid=.*,subvol=\/@\/.snapshots\/1\/snapshot//' /mnt/etc/fstab
 }
 
   SCRIPT_10_CHROOT() {
