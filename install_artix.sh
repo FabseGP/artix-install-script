@@ -1199,8 +1199,8 @@ EOM
     mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
-        echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --size 4196 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
-        echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --persistent "$DRIVE_path_primary" cryptroot
+        echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
+        echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_primary" cryptroot
         mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
         MOUNTPOINT="/dev/mapper/cryptroot"
       else
