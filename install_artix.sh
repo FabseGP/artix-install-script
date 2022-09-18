@@ -1181,8 +1181,8 @@ EOM
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
         mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart HOME "$BOOT_size"MiB $HOME_size \
-        mkpart PRIMARY "$HOME_size"MiB 100% 
+        mkpart HOME "$BOOT_size"MiB "$HOME_size"GiB \
+        mkpart PRIMARY "$HOME_size"GiB 100% 
     else
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
