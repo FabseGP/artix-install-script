@@ -1279,7 +1279,11 @@ EOM
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$HOME_partition" == "true" ]]; then
-      mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
+      if [["$ENCRYPTION_partitions" == "true" ]]; then
+        mount -o noatime,compress=zstd,discard=async /dev/mapper/cryptroot /mnt/home
+      else
+        mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
+      fi
       mkdir btrbk_snapshots
     fi
 }	
@@ -1531,23 +1535,29 @@ EOF
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then	
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto_keyfile.bin"/' /etc/default/grub
-        sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
-        sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
-        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
-        touch grub-pre.cfg
-        cat << EOF | tee -a grub-pre.cfg > /dev/null
+        if [["$HOME_partition" == "true" ]]; then
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ cryptdevice='"$DRIVE_path_home"':cryptroot\ rd.luks.allow-discards/'
+          grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+          grub-mkconfig -o /boot/grub/grub.cfg
+        else
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/'' /etc/default/grub
+          sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
+          sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
+          grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+          touch grub-pre.cfg
+          cat << EOF | tee -a grub-pre.cfg > /dev/null
 cryptomount -u $UUID_2 
 set root=crypto0
 set prefix=(crypto0)/@/boot/grub
 insmod normal
 normal
 EOF
-        grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
-        cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
-        grub-mkconfig -o /boot/grub/grub.cfg
-        cp grub-pre.cfg /.secret
-        rm -rf {/tmp/image,grub-pre.cfg}
+          grub-mkimage -p '/boot/grub' -O x86_64-efi -c grub-pre.cfg -o /tmp/image luks2 btrfs part_gpt cryptodisk gcry_rijndael pbkdf2 gcry_sha512
+          cp /tmp/image /boot/efi/EFI/"$BOOTLOADER_label"/grubx64.efi
+          grub-mkconfig -o /boot/grub/grub.cfg
+          cp grub-pre.cfg /.secret
+          rm -rf {/tmp/image,grub-pre.cfg}
+        fi
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
       :
