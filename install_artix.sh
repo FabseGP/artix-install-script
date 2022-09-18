@@ -1272,6 +1272,7 @@ EOM
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$HOME_partition" == "true" ]]; then
       mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
+      mkdir btrbk_snapshots
     fi
 }	
  
