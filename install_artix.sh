@@ -1498,7 +1498,7 @@ EOF
   SYSTEM_08_SNAPSHOTS() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       cd /install_script/packages || exit
-      BTRBK="$(ls -- *paru-*)"
+      BTRBK="$(ls -- *btrbk-*)"
       pacman -U --noconfirm $BTRBK
       cd /install_script || exit
       cp configs/btrbk.conf /etc/btrbk/btrbk.conf
