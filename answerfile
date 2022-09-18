@@ -20,31 +20,41 @@
 
 # ------ ONLY MODIFY BELOW IF ENCRYPTION_partitions IS "true" ------ 
 
-  ENCRYPTION_passwd="NOT SPECIFIED"
+  ENCRYPTION_passwd="UNSPECIFIED"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # boot-partition
 
   BOOT_size="300" # In megabytes; minimum 300 MB is required
-  BOOT_label="NOT SPECIFIED" # Maximum 11 characters with FAT32
+  BOOT_label="UNSPECIFIED" # Maximum 11 characters with FAT32
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-# swap-partition
+# home-partition
 
-  SWAP_partition="" # "true" or "false"
+  HOME_partition="" # "true" or "false"
+
+# ------ ONLY MODIFY BELOW IF HOME_partition IS "true" ------ 
+
+  HOME_size="200" # In gigabytes; the rest is filled by /
+  HOME_label="UNSPECIFIED"
+
+#----------------------------------------------------------------------------------------------------------------------------------
+
+# zram-partition; modern replacement for swap-partition
+
+  ZRAM="" # "true" or "false"
 
 # ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
 
-  SWAP_size_allocated="8300" # If SWAP_size should be 8000 MB and BOOT_size is 300 MB
-  SWAP_label="NOT SPECIFIED" 
+  SWAP_size_percentage="20" # Written in percentage of RAM, e.g. 2GB out of 8GB RAM = 25, though maximum 50
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # primary-partition
 
-  PRIMARY_label="NOT SPECIFIED"
+  PRIMARY_label="UNSPECIFIED"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -71,29 +81,30 @@
 
 # locals
 
-  TIMEZONE="NOT SPECIFIED" # e.g. "Europe/Copenhagen"
-  LANGUAGES_generate="NOT SPECIFIED" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
-  LANGUAGE_system="NOT SPECIFIED"
-  KEYMAP_system="NOT SPECIFIED"
-  HOSTNAME_system="NOT SPECIFIED"
+  TIMEZONE="UNSPECIFIED" # e.g. "Europe/Copenhagen"
+  LANGUAGES_generate="UNSPECIFIED" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
+  LANGUAGE_system="UNSPECIFIED"
+  KEYMAP_system="UNSPECIFIED"
+  HOSTNAME_system="UNSPECIFIED"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # users
 
-  ROOT_passwd="NOT SPECIFIED" 
-  USERNAME="NOT SPECIFIED"
-  USER_passwd="NOT SPECIFIED"
+  ROOT_passwd="UNSPECIFIED" 
+  USERNAME="UNSPECIFIED"
+  USER_passwd="UNSPECIFIED"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # miscellaneous
 
-  BOOTLOADER_label="NOT SPECIFIED"
+  BOOTLOADER_label="UNSPECIFIED"
   PACKAGES_additional="NONE" # Must be space-separated; e.g. "firefox kicad"
                              # Keep "NONE" as value, if no other packages should be installed
   POST_script="" # "true": fetches and execute specified script as regular user from an git-repository
                  # "false": does nothing
+  CHAOTIC_aur="" # "true" or "false"; "true" will add CHAOTIC AUR repos
 
 # ------ ONLY MODIFY BELOW IF POST_script IS "true" ------ 
 
