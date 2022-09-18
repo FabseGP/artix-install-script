@@ -1310,7 +1310,7 @@ EOM
       pacman-key --recv-key FBA220DFC880C036 --keyserver keyserver.ubuntu.com
       pacman-key --lsign-key FBA220DFC880C036
       pacman --noconfirm -U 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-keyring.pkg.tar.zst' 'https://cdn-mirror.chaotic.cx/chaotic-aur/chaotic-mirrorlist.pkg.tar.zst'
-      cp /install_script/configs/pacman_chaotic.conf /etc/pacman.conf
+      cp configs/pacman_chaotic.conf /etc/pacman.conf
       kernel="linux-tkg-cfs"
       kernel_headers="linux-tkg-cfs-headers"
     else
