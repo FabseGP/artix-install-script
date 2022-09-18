@@ -1614,7 +1614,7 @@ EOF
     fi
     if [[ "$ZRAM" == "true" ]]; then
       sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen
-      cp configs/zramen {/.secret,/etc/dinit.d/scripts/zramen}
+      cp configs/zramen /{.secret,/etc/dinit.d/scripts/zramen}
     fi
 }
 
