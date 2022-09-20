@@ -1,0 +1,10 @@
+#!/usr/bin/openrc-run
+
+pidfile="/run/zramen.pid"
+command="/usr/bin/zramen -a zstd -s CHANGEME make"
+command_args="make"
+command_background=true
+
+stop() {
+       /usr/bin/zramen toss
+}

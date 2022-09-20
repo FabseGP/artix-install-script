@@ -1586,6 +1586,8 @@ EOF
       pacman -U --noconfirm $ELOGIND
       pacman -S --noconfirm pam_rundir
     fi
+    ANANICY="$(ls -- *ananicy-*)"
+    pacman -U --noconfirm $ANANICY
 }
 
   SYSTEM_11_MISCELLANEOUS() {
@@ -1601,6 +1603,36 @@ EOF
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
+      cp configs/ananicy-cpp-openrc /etc/init.d/ananicy-cpp
+      chmod 755 /etc/init.d/ananicy-cpp
+      ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
+      rc-update add ananicy-cpp
+      if [[ "$ZRAM" == "true" ]]; then
+        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen-openrc
+        cp configs/zramen-openrc /etc/init.d/zramen
+        chmod 755 /etc/init.d/zramen
+      fi
+    elif [[ "$INIT_choice" == "runit" ]]; then
+      mkdir /etc/runit/sv/ananicy-cpp
+      cp configs/ananicy-cpp-runit-finish /etc/runit/sv/ananicy-cpp/finish
+      cp configs/ananicy-cpp-runit-start /etc/runit/sv/ananicy-cpp/start
+      cp configs/ananicy-cpp-runit-stop /etc/runit/sv/ananicy-cpp/stop
+      chmod 755 -R /etc/runit/sv/ananicy-cpp
+      ln -s /etc/runit/sv/ananicy-cpp /etc/runit/runsvdir/default
+      if [[ "$ZRAM" == "true" ]]; then
+        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen-runit
+        cp configs/zramen-runit /etc/runit/sv/zramen/run
+        chmod 755 /etc/runit/sv/zramen/run
+      fi
+    elif [[ "$INIT_choice" == "dinit" ]]; then
+      cp configs/ananicy-cpp-dinit /etc/dinit/ananicy-cpp
+      chmod 755 /etc/dinit/ananicy-cpp
+      ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
+      if [[ "$ZRAM" == "true" ]]; then
+        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen-dinit
+        cp configs/zramen-dinit /etc/dinit.d/scripts/zramen
+        chmod 755 /etc/dinit.d/scripts/zramen
+      fi
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       touch /etc/cron.weekly/btrfs_health
@@ -1636,11 +1668,6 @@ EOF
     cd $BEGINNER_DIR || exit
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
       cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
-    fi
-    if [[ "$ZRAM" == "true" ]]; then
-      sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen
-      cp configs/zramen /.secret
-      cp configs/zramen /etc/dinit.d/scripts/zramen
     fi
 }
 
