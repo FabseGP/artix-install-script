@@ -1,9 +1,0 @@
-#!/bin/sh
-case "$1" in
-    start)
-        zramen -a zstd -s CHANGEME make
-    ;;
-    stop)
-        zramen toss
-    ;;
-esac
