@@ -4,6 +4,7 @@ Operation = Upgrade
 Type = Package
 Target = artix-mirrorlist
 Target = artix-archlinux-support
+Target = alhp-mirrorlist
 
 [Action]
 Description = Ranking mirrors...
