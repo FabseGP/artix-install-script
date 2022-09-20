@@ -1628,6 +1628,7 @@ EOF
     fi
     cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
     chmod u+x /usr/share/libalpm/scripts/{ranking-mirrors,grub-update}
+    cp hooks/* /etc/pacman.d/hooks
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
     cd /install_script/packages || exit
     PACDIFF="$(ls -- *pacdiff-*)"
