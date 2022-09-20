@@ -1,7 +1,9 @@
 #!/bin/sh
 case "$1" in
     start)
-        /usr/bin/zramen -a zstd -s CHANGEME make ;;
+        zramen -a zstd -s CHANGEME make
+    ;;
     stop)
-        /usr/bin/zramen toss ;;
+        zramen toss
+    ;;
 esac
