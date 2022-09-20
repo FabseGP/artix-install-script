@@ -3,4 +3,4 @@ command         = /usr/bin/ananicy-cpp start
 smooth-recovery = true
 restart         = true
 logfile         = /var/log/dinit/ananicy-cpp.log
-waits-for       = pseudofs
+waits-for       = setup
