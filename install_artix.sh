@@ -1631,7 +1631,8 @@ EOF
       if [[ "$ZRAM" == "true" ]]; then
         sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' configs/zramen-dinit
         cp configs/zramen-dinit /etc/dinit.d/scripts/zramen
-        chmod 755 /etc/dinit.d/scripts/zramen
+        cp configs/zramen-diinit-start /etc/dinit.d/zramen
+        chmod 755 /etc/dinit.d/{zramen,scripts/zramen}
       fi
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
