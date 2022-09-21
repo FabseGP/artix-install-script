@@ -10,27 +10,12 @@
     pacman -Sy --noconfirm artix-archlinux-support
     pacman-key --init
     pacman-key --populate archlinux artix
-    cd /install_script/packages || exit
-    ALPH_mirrorlist="$(ls -- *alhp-mirrorlist-*)"
-    ALPH_keyring="$(ls -- *alhp-keyring-*)"
-    pacman -U --noconfirm $ALPH_mirrorlist $ALPH_keyring
-    cd $BEGINNER_DIR
     cp /install_script/configs/pacman.conf /etc/pacman.conf
-    cp /install_script/configs/alhp-mirrorlist /etc/pacman.d/alhp-mirrorlist
-    chmod 644 /etc/pacman.d/alhp-mirrorlist
     pacman -Syy 
   else 
     pacman -Syy --noconfirm artix-archlinux-support
     pacman-key --init
     pacman-key --populate archlinux artix
-    cd packages || exit
-    ALPH_mirrorlist="$(ls -- *alhp-mirrorlist-*)"
-    ALPH_keyring="$(ls -- *alhp-keyring-*)"
-    pacman -U --noconfirm $ALPH_mirrorlist $ALPH_keyring
-    cd $BEGINNER_DIR
-    cp configs/alhp-mirrorlist /etc/pacman.d/alhp-mirrorlist
-    chmod 644 /etc/pacman.d/alhp-mirrorlist
     cp configs/pacman.conf /etc/pacman.conf
     pacman -Syy 
   fi
-
