@@ -1,4 +1,0 @@
-!/bin/sh
-
-exec /usr/bin/ananicy-cpp start
-

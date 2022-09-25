@@ -8,4 +8,4 @@ Target = linux-*
 [Action]
 Description = Defaults grub-entries to booster-initramfs only...
 When = PostTransaction
-Exec = /bin/sh -c '/usr/share/libalpm/scripts/grub-update'
+Exec = /usr/bin/bash -c '/usr/share/libalpm/scripts/grub-update.sh'

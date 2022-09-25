@@ -1,4 +1,0 @@
-#!/bin/sh
-[ -r ./conf ] && . ./conf
-zramen -a zstd -s CHANGEME make
-exec pause
