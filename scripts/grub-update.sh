@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 
   source /.secret/bootloader-id
   cp /.secret/10_linux /etc/grub.d/10_linux

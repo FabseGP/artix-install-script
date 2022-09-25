@@ -9,26 +9,26 @@ By default, the following is set up:
 - Arch-repositories enabled
 - The following pacman-hooks:
     - Cleaning package cache to only keep the two latest versions
-    - Creating snapshots pre and post kernel update/install + recreates grub.cfg
+    - Creating snapshots pre kernel update/install + recreates grub.cfg
+    - Ranks pacman-mirrorlist whenever the mirrorlist are updated
 - The following packages:
-    - GRUB as bootloader
     - linux-zen, linux-zen-headers and linux-firmware
-    - cronie (used for snapshots-cleaning), cryptsetup (for encrypted swap alone, if no encryption of /), iwd (replaces wpa_supplicant), chrony (used to keep check of system-time) and backlight (saves previous brightness) as init-services
+    - Init-services: ananicy-cpp (manage processes' IO and CPU priorities), cronie (used for snapshots-cleaning), cryptsetup (for encrypted swap alone, if no encryption of /), iwd (replaces wpa_supplicant), chrony (used to keep check of system-time) and backlight (saves previous brightness)
     - Either intel-ucode or amd-ucode depending on your CPU
-    - booster as a fast replacement for mkinitcpio
+    - booster as a replacement for mkinitcpio
     - Filesystem utilies; either btrfs-progs or bcachefs-tools + dosfstools (for FAT32)
-    - Miscellaneous packages: iptables-nft (replaces iptables), pacman-contrib (provides paccache and more), snap-pac and base-devel
+    - Miscellaneous packages: iptables-nft (replaces iptables), pacman-contrib (provides paccache and more), btrbk (snapshots-utility), git and base-devel
 
 while the following are decided by the user:
 
 - Choice of filesystem; either btrfs or bcachefs
     - NOTICE: Bcachefs is yet to be mainlined into the kernel
-- LUKS2-encryption of /
-    - Currently booster doesn't support encryption-keys, whereas two password-prompts (one for unlocking /boot and /) will emerge on boot; set to be added in 0.9 release
-- Swap-partition
+- Making a /home-partition or not
+- LUKS2-encryption of / or /home, if a /home-partition exist
+- zram as a replacement for a swap-partition; includes zramen as an init-service
 - Choice of init; dinit, openrc or runit
 - Replacing the following packages with alternatives:
-    - Replace elogind with seatd; will install an elogind-dummy-package
+    - Replace elogind with seatd; will install an elogind dummy-package
     - Replace networkmanager with connman
     - Replace sudo with doas
 - Install additional packages
@@ -52,9 +52,8 @@ connmanctl
 pacman -Sy --noconfirm git
 git clone https://gitlab.com/FabseGP02/artix-install-script.git
 cd artix-install-script
-chmod u+x install_artix.sh
 ./install_artix.sh # Remember to replace the answerfile, if an automatic install is desired
-````
+```
 
 ## TODO
 In no given order:
