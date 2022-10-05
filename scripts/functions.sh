@@ -7,18 +7,12 @@
       printf "%s" "Installing dependencies "
       local command="pacman -Sy --noconfirm --needed lolcat figlet parted wget"
       $command > /dev/null 2>&1 &
-      while ! [[ $(pacman -Qs lolcat) ]]; do
-        PRINT_PROGRESS_BAR 
-        sleep 1
-      done
+      while ! [[ $(pacman -Qs lolcat) ]]; do PRINT_PROGRESS_BAR; sleep 1; done
       printf " [%s]\n" "Success!"
     fi
     if [[ -z "$(pacman -Qs artix-archlinux-support)" ]]; then
-      if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
-        scripts/repositories.sh > /dev/null 2>&1 &
-      else
-        scripts/repositories.sh
-      fi
+      if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then scripts/repositories.sh > /dev/null 2>&1 &;
+      else scripts/repositories.sh; fi
     fi
 }
  
@@ -26,64 +20,33 @@
     eval "${messages[0]}"
     export ENTRY="intro"
     MULTISELECT_MENU "${intro[@]}"
-    if [[ "$INIT_choice_runit" == "true" ]]; then
-      export INIT_choice="runit"
-    elif [[ "$INIT_choice_openrc" == "true" ]]; then
-      export INIT_choice="openrc"
-    elif [[ "$INIT_choice_dinit" == "true" ]]; then
-      export INIT_choice="dinit"
-    fi
-    if [[ "$BOOTLOADER_choice_grub" == "true" ]]; then
-      export BOOTLOADER_choice="grub"
-    elif [[ "$BOOTLOADER_choice_refind" == "true" ]]; then
-      export BOOTLOADER_choice="openrc"
-    fi
+    if [[ "$INIT_choice_runit" == "true" ]]; then export INIT_choice="runit";
+    elif [[ "$INIT_choice_openrc" == "true" ]]; then export INIT_choice="openrc";
+    elif [[ "$INIT_choice_dinit" == "true" ]]; then export INIT_choice="dinit"; fi
+    if [[ "$BOOTLOADER_choice_grub" == "true" ]]; then export BOOTLOADER_choice="grub";
+    elif [[ "$BOOTLOADER_choice_refind" == "true" ]]; then export BOOTLOADER_choice="openrc"; fi
 }
 
   SCRIPT_03_CUSTOMIZING() {
-    if [[ "$ENCRYPTION_partitions" == "false" ]]; then
-      export ENCRYPTION_passwd="IGNORED"
-    fi
-    if [[ "$POST_script" == "false" ]]; then
-      export POST_install_script="IGNORED"
-      export POST_install_script_name="IGNORED"
-    fi
+    if [[ "$ENCRYPTION_partitions" == "false" ]]; then export ENCRYPTION_passwd="IGNORED"; fi
+    if [[ "$POST_script" == "false" ]]; then export POST_install_script="IGNORED"; export POST_install_script_name="IGNORED"; fi
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
     if [[ "$ZRAM" == "true" ]]; then
-      if [[ "$HOME_partition" == "true" ]]; then
-        PRINT_TABLE ',' "$OUTPUT_partitions_full"
-        CUSTOMIZING_INSTALL PARTITIONS_full
-      else
-        PRINT_TABLE ',' "$OUTPUT_partitions_without_home"
-        CUSTOMIZING_INSTALL PARTITIONS_without_home
-      fi
+      if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full"; CUSTOMIZING_INSTALL PARTITIONS_full;
+      else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; CUSTOMIZING_INSTALL PARTITIONS_without_home; fi
     else
-      if [[ "$HOME_partition" == "true" ]]; then
-        PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"
-        CUSTOMIZING_INSTALL PARTITIONS_without_swap
-      else
-        PRINT_TABLE ',' "$OUTPUT_partitions_minimal"
-        CUSTOMIZING_INSTALL PARTITIONS_minimal
-      fi
+      if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_without_swap"; CUSTOMIZING_INSTALL PARTITIONS_without_swap;
+      else PRINT_TABLE ',' "$OUTPUT_partitions_minimal"; CUSTOMIZING_INSTALL PARTITIONS_minimal; fi
     fi
-    PRINT_MESSAGE "${messages[10]}" 
-    PRINT_TABLE ',' "$OUTPUT_locals"
-    CUSTOMIZING_INSTALL LOCALS
-    PRINT_MESSAGE "${messages[11]}" 
-    PRINT_TABLE ',' "$OUTPUT_users"
-    CUSTOMIZING_INSTALL USERS
-    PRINT_MESSAGE "${messages[12]}" 
-    PRINT_TABLE ',' "$OUTPUT_miscellaneous"
-    CUSTOMIZING_INSTALL MISCELLANEOUS
+    PRINT_MESSAGE "${messages[10]}" && PRINT_TABLE ',' "$OUTPUT_locals" && CUSTOMIZING_INSTALL LOCALS
+    PRINT_MESSAGE "${messages[11]}" && PRINT_TABLE ',' "$OUTPUT_users" && CUSTOMIZING_INSTALL USERS
+    PRINT_MESSAGE "${messages[12]}" && PRINT_TABLE ',' "$OUTPUT_miscellaneous" && CUSTOMIZING_INSTALL MISCELLANEOUS
 }
 
   SCRIPT_04_UMOUNT_MNT() {
-    if [[ "$(mountpoint /mnt)" ]]; then
-      swapoff -a
-      umount -A --recursive /mnt
-    fi
+    if [[ "$(mountpoint /mnt)" ]]; then swapoff -a; umount -A --recursive /mnt; fi
 }
 
   SCRIPT_05_CREATE_PARTITIONS() {
@@ -120,9 +83,7 @@
       else
         mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
         MOUNTPOINT="$DRIVE_path_primary"
-        if [[ "$HOME_partition" == "true" ]]; then
-          mkfs.btrfs -f -L "$HOME_label" "$DRIVE_path_home"
-        fi
+        if [[ "$HOME_partition" == "true" ]]; then mkfs.btrfs -f -L "$HOME_label" "$DRIVE_path_home"; fi
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
@@ -136,9 +97,7 @@
         MOUNTPOINT="$DRIVE_path_primary"
       else
         bcachefs format -f --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary" 
-        if [[ "$HOME_partition" == "true" ]]; then
-          bcachefs format -f --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home" 
-        fi       
+        if [[ "$HOME_partition" == "true" ]]; then bcachefs format -f --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home" ; fi       
       fi
     fi
 }
@@ -151,23 +110,12 @@
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
         if ! [[ "${subvolumes[subvolume]}" == "@" ]]; then
-          if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-            btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"
-            chattr +C "${subvolumes[subvolume]}"
-          elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
-            btrfs subvolume create "/mnt/@/boot/grub"
-          elif [[ "${subvolumes[subvolume]}" == "home" ]]; then 
-            btrfs subvolume create "/mnt/@/home"
-          else
-            btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"
-          fi
-        else
-          btrfs subvolume create "/mnt/${subvolumes[subvolume]}"
-          mkdir -p /mnt/@/{var,boot}
-        fi
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-        bcachefs subvolume create "${subvolumes[subvolume]}"
-      fi
+          if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"; chattr +C "${subvolumes[subvolume]}";
+          elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then btrfs subvolume create "/mnt/@/boot/grub";
+          elif [[ "${subvolumes[subvolume]}" == "home" ]]; then  btrfs subvolume create "/mnt/@/home";
+          else btrfs subvolume create "/mnt/@/${subvolumes[subvolume]}"; fi
+        else btrfs subvolume create "/mnt/${subvolumes[subvolume]}"; mkdir -p /mnt/@/{var,boot}; fi
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then bcachefs subvolume create "${subvolumes[subvolume]}"; fi
     done
     umount /mnt
     mount "$MOUNTPOINT" -o noatime,compress=zstd /mnt
@@ -176,78 +124,42 @@
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
         subvolume_path=$(string="${subvolumes[subvolume]}"; echo "${string//@/}")
         if ! [[ "${subvolumes[subvolume]}" == "@" ]]; then
-          if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then
-            mkdir -p /mnt/"${subvolumes[subvolume]}"
-            if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then
-              mount -o noatime,nodatacow,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
+          if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then mkdir -p /mnt/"${subvolumes[subvolume]}";
+            if [[ "${subvolumes[subvolume]}" == "var/*" ]]; then mount -o noatime,nodatacow,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path";
             if [[ "${subvolumes[subvolume]}" == "home" ]]; then
-              if ! [[ "$HOME_partition" == "true" ]]; then
-                mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
-              fi
+              if ! [[ "$HOME_partition" == "true" ]]; then mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"; fi
             fi
-            else
-              mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"
-            fi  
-          elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then
-            mkdir -p /mnt/boot/{efi,grub}
-            mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub
-          fi
+            else mount -o noatime,compress=zstd,discard=async,subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"; fi  
+          elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then mkdir -p /mnt/boot/{efi,grub}; mount -o noatime,compress=zstd,discard=async,nodev,noexec,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub; fi
         fi
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-        :
-      fi
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
     done
     sync
     cd "$BEGINNER_DIR" || exit
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$HOME_partition" == "true" ]]; then
-        if [[ "$ENCRYPTION_partitions" == "true" ]]; then
-          mount -o noatime,compress=zstd,discard=async /dev/mapper/crypthome /mnt/home
-        else
-          mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home
-        fi
+        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount -o noatime,compress=zstd,discard=async /dev/mapper/crypthome /mnt/home;
+        else mount -o noatime,compress=zstd,discard=async "$DRIVE_path_home" /mnt/home; fi
         mkdir /mnt/home/btrbk_snapshots
       fi
-    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-      :
-    fi
+    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
-    if grep -q Intel "/proc/cpuinfo"; then # Poor soul :(
-      ucode="intel-ucode"
-    elif grep -q AMD "/proc/cpuinfo"; then
-      ucode="amd-ucode"
-    fi
-    if [[ "$REPLACE_sudo" == "true" ]]; then
-      su="opendoas"
-    else
-      su="sudo"
-    fi
-    if [[ "$ZRAM" == "true" ]]; then
-      zramen="zramen-$INIT_choice"
-    fi
-    if [[ "$BOOTLOADER_choice" == "refind" ]]; then
-      bootloader="refind"
-    elif [[ "$BOOTLOADER_choice" == "grub" ]]; then
-      bootloader="grub"
-    fi
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      seat="seatd-$INIT_choice"
-    else
-      seat="elogind-$INIT_choice"
-    fi
-    if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      network="connman-$INIT_choice"
-    else
-      network="networkmanager-$INIT_choice"
-    fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      filesystem="grub-btrfs"
-    else
-      filesystem="bcachefs-tools"
-    fi
+    if grep -q Intel "/proc/cpuinfo"; then ucode="intel-ucode";
+    elif grep -q AMD "/proc/cpuinfo"; then ucode="amd-ucode"; fi
+    if [[ "$REPLACE_sudo" == "true" ]]; then su="opendoas";
+    else su="sudo"; fi
+    if [[ "$ZRAM" == "true" ]]; then zramen="zramen-$INIT_choice"; fi
+    if [[ "$BOOTLOADER_choice" == "refind" ]]; then bootloader="refind";
+    elif [[ "$BOOTLOADER_choice" == "grub" ]]; then bootloader="grub"; fi
+    if [[ "$REPLACE_elogind" == "true" ]]; then seat="seatd-$INIT_choice";
+    else seat="elogind-$INIT_choice"; fi
+    if [[ "$REPLACE_networkmanager" == "true" ]]; then network="connman-$INIT_choice"; 
+    else network="networkmanager-$INIT_choice"; fi
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then filesystem="grub-btrfs";
+    else filesystem="bcachefs-tools"; fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    chrony-$INIT_choice booster zstd realtime-privileges efibootmgr base base-devel dosfstools git \
                    iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware $ucode $seat $network \
@@ -268,10 +180,7 @@ EOF
     cd "$BEGINNER_DIR" || exit
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
-      if [[ "${functions[function]}" == *"SYSTEM"* ]]; then
-        export -f "${functions[function]}"
-        artix-chroot /mnt /bin/bash -c "${functions[function]}"
-      fi
+      if [[ "${functions[function]}" == *"SYSTEM"* ]]; then export -f "${functions[function]}"; artix-chroot /mnt /bin/bash -c "${functions[function]}"; fi
     done
 }
 
@@ -285,24 +194,17 @@ EOF
     hwclock --systohc
     # Language(s)
     j=1
-    IFS=' ' 
-    read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
-    for language in "${LANGUAGES_array[@]}"; do
-      sed -i '/'"$language"'/s/^#//g' /etc/locale.gen
-    done
+    IFS=' ' && read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
+    for language in "${LANGUAGES_array[@]}"; do sed -i '/'"$language"'/s/^#//g' /etc/locale.gen; done
     locale-gen
     echo "LANG="$LANGUAGE_system"" >> /etc/locale.conf
     echo "LC_ALL="$LANGUAGE_system"" >> /etc/locale.conf
     # Keymap
     echo "KEYMAP="$KEYMAP_system"" >> /etc/vconsole.conf
-    if [[ "$INIT_choice" == "openrc" ]]; then
-      echo "KEYMAP="$KEYMAP_system"" >> /etc/conf.d/keymaps
-    fi
+    if [[ "$INIT_choice" == "openrc" ]]; then echo "KEYMAP="$KEYMAP_system"" >> /etc/conf.d/keymaps; fi
     # Hostname
     echo "$HOSTNAME_system" >> /etc/hostname
-    if [[ "$INIT_choice" == "openrc" ]]; then
-      echo "hostname='"$HOSTNAME_system"'" >> /etc/conf.d/hostname
-    fi
+    if [[ "$INIT_choice" == "openrc" ]]; then echo "hostname='"$HOSTNAME_system"'" >> /etc/conf.d/hostname; fi
     cat << EOF | tee -a /etc/hosts > /dev/null
 127.0.0.1 localhost
 ::1 localhost
@@ -313,19 +215,14 @@ EOF
   SYSTEM_02_USERS() {
     echo "root:$ROOT_passwd" | chpasswd
     useradd -m  -G "$USER_groups" "$USERNAME"
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      groupadd seatd
-      usermod -a -G seatd "$USERNAME"
-    fi
+    if [[ "$REPLACE_elogind" == "true" ]]; then groupadd seatd; usermod -a -G seatd "$USERNAME"; fi
     echo -e "$USER_passwd\n$USER_passwd\n" | passwd $USERNAME
 }
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
     cd /install_script/scripts || exit
     ./repositories.sh
-    if ! [[ "$PACKAGES_additional" == "NONE" ]]; then
-      pacman -S --noconfirm --needed "$PACKAGES_additional"
-    fi
+    if ! [[ "$PACKAGES_additional" == "NONE" ]]; then pacman -S --noconfirm --needed "$PACKAGES_additional"; fi
 }
 
   SYSTEM_04_AUR() {
@@ -339,9 +236,7 @@ EOF
     cp configs/bash.bashrc /home/"$USERNAME"/.bashrc
     cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
     cp /install_script/configs/makepkg.conf /etc/makepkg.conf
-    if [[ "$core_count" -gt 1 ]]; then 
-      sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$core_count\"/g" /etc/makepkg.conf
-    fi
+    if [[ "$core_count" -gt 1 ]]; then sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$core_count\"/g" /etc/makepkg.conf; fi
 }
 
   SYSTEM_05_SUPERUSER() {
@@ -362,15 +257,11 @@ complete -cf doas
 
 EOF
       done
-    else
-      sed -i -e "/Sudo = doas/s/^#*/#/" /etc/paru.conf
-      echo "%wheel ALL=(ALL) ALL" | (EDITOR="tee -a" visudo)
-    fi
+    else sed -i -e "/Sudo = doas/s/^#*/#/" /etc/paru.conf; echo "%wheel ALL=(ALL) ALL" | (EDITOR="tee -a" visudo); fi
 }
 
   SYSTEM_06_SERVICES() {
-    if [[ "$REPLACE_networkmanager" == "true" ]]; then
-      export network_manager="connmand"
+    if [[ "$REPLACE_networkmanager" == "true" ]]; then export network_manager="connmand";
     else
       pacman -S --noconfirm polkit
       export network_manager="NetworkManager"
@@ -383,22 +274,14 @@ EOF
     for service in $network_manager cronie backlight chronyd zramen; do
       if [[ "$service" == "zramen" ]]; then
         if [[ "$ZRAM" == "true" ]]; then
-          if [[ "$INIT_choice" == "dinit" ]]; then
-            ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
-          elif [[ "$INIT_choice" == "runit" ]]; then
-            ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
-          elif [[ "$INIT_choice" == "openrc" ]]; then
-            rc-update add $service
-          fi
+          if [[ "$INIT_choice" == "dinit" ]]; then ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d;
+          elif [[ "$INIT_choice" == "runit" ]]; then ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default;
+          elif [[ "$INIT_choice" == "openrc" ]]; then rc-update add $service; fi
         fi
       else
-        if [[ "$INIT_choice" == "dinit" ]]; then
-          ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d
-        elif [[ "$INIT_choice" == "runit" ]]; then
-          ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default
-        elif [[ "$INIT_choice" == "openrc" ]]; then
-          rc-update add $service
-        fi
+        if [[ "$INIT_choice" == "dinit" ]]; then ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d;
+        elif [[ "$INIT_choice" == "runit" ]]; then ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default;
+        elif [[ "$INIT_choice" == "openrc" ]]; then rc-update add $service; fi
       fi
     done
 }
@@ -456,9 +339,7 @@ EOF
           cp grub-pre.cfg /.secret
           rm -rf {/tmp/image,grub-pre.cfg}
         fi
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
-        :
-      fi
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
       if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -469,21 +350,13 @@ EOF
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         grub-mkconfig -o /boot/grub/grub.cfg
       fi
-    elif [[ "$BOOTLOADER_choice" == "refind" ]]; then
-      :
-    fi
+    elif [[ "$BOOTLOADER_choice" == "refind" ]]; then :; fi
 }
 
   SYSTEM_10_PACKAGES_INSTALL_AND_REMOVE() {
     cd /install_script/packages || exit  
-    if [[ "$REPLACE_sudo" == "true" ]]; then
-      pacman -Rns --noconfirm sudo
-    fi
-    if [[ "$REPLACE_elogind" == "true" ]]; then
-      ELOGIND="$(ls -- *elogind-*)"
-      pacman -U --noconfirm $ELOGIND
-      pacman -S --noconfirm pam_rundir
-    fi
+    if [[ "$REPLACE_sudo" == "true" ]]; then pacman -Rns --noconfirm sudo; fi
+    if [[ "$REPLACE_elogind" == "true" ]]; then ELOGIND="$(ls -- *elogind-*)"; pacman -U --noconfirm $ELOGIND; pacman -S --noconfirm pam_rundir; fi
     ANANICY="$(ls -- *ananicy-*)"
     pacman -U --noconfirm $ANANICY
 }
@@ -504,30 +377,18 @@ EOF
       cp services/openrc/ananicy/ananicy-cpp-openrc /etc/init.d/ananicy-cpp
       ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
       rc-update add ananicy-cpp
-      if [[ "$ZRAM" == "true" ]]; then
-        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/openrc/zramen/zramen-openrc
-        cp services/openrc/zramen/zramen-openrc /etc/init.d/zramen
-      fi
+      if [[ "$ZRAM" == "true" ]]; then sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/openrc/zramen/zramen-openrc; cp services/openrc/zramen/zramen-openrc /etc/init.d/zramen; fi
     elif [[ "$INIT_choice" == "runit" ]]; then
       mkdir /etc/runit/sv/ananicy-cpp
       cp services/runit/ananicy/* /etc/runit/sv/ananicy-cpp
       ln -s /etc/runit/sv/ananicy-cpp /etc/runit/runsvdir/default
-      if [[ "$ZRAM" == "true" ]]; then
-        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/runit/zramen/zramen-runit
-        cp services/runit/zramen/zramen-runit /etc/runit/sv/zramen/run
-      fi
+      if [[ "$ZRAM" == "true" ]]; then sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/runit/zramen/zramen-runit; cp services/runit/zramen/zramen-runit /etc/runit/sv/zramen/run; fi
     elif [[ "$INIT_choice" == "dinit" ]]; then
       cp services/dinit/ananicy/ananicy-cpp-dinit /etc/dinit/ananicy-cpp
       ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
-      if [[ "$ZRAM" == "true" ]]; then
-        sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/dinit/zramen/zramen-dinit
-        cp services/dinit/zramen/zramen-dinit /etc/dinit.d/scripts/zramen
-        cp services/dinit/zramen/zramen-diinit-start /etc/dinit.d/zramen
-      fi
+      if [[ "$ZRAM" == "true" ]]; then sed -i 's/CHANGEME/'"$SWAP_size_percentage"'/g' services/dinit/zramen/zramen-dinit; cp services/dinit/zramen/zramen-dinit /etc/dinit.d/scripts/zramen; cp services/dinit/zramen/zramen-diinit-start /etc/dinit.d/zramen; fi
     fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cp services/cron/weekly/btrfs_health /etc/cron.weekly
-    fi
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then cp services/cron/weekly/btrfs_health /etc/cron.weekly; fi
     cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
     cp hooks/* /etc/pacman.d/hooks
     pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
@@ -535,27 +396,19 @@ EOF
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
     cd $BEGINNER_DIR || exit
-    if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
-      cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/
-    fi
+    if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/; fi
 }
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
       export basename=$(basename $POST_install_script)
       export basename_clean=${basename%.*}
-      if [[ "$REPLACE_sudo" == "true" ]]; then
-        echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null
-      else
-        echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null
-      fi
+      if [[ "$REPLACE_sudo" == "true" ]]; then echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null;
+      else echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null; fi
       su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
       rm -rf /home/$USERNAME/$basename_clean
-      if [[ "$REPLACE_sudo" == "true" ]]; then
-        sed -i "/permit nopass $USERNAME/d" /etc/doas.conf
-      else
-        sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers
-      fi
+      if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
+      else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
     fi
 }
 
