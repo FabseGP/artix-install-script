@@ -10,25 +10,17 @@
   source scripts/menu.sh
   source scripts/functions.sh
   set -a # Force export all variables; most relevant for answerfile
-  if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then
-    openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -in /.encrypt/answer_encrypt.txt -out /.decrypt/decrypt.txt -pass file:/.nothing/nothing.txt
-    source /.decrypt/decrypt.txt
-  elif [[ -f "/.nothing/answerfile_wget.txt" ]]; then
-    source /.nothing/answerfile_wget.txt
-  else
-    source answerfile
-  fi
+  if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -in /.encrypt/answer_encrypt.txt -out /.decrypt/decrypt.txt -pass file:/.nothing/nothing.txt; source /.decrypt/decrypt.txt; 
+  elif [[ -f "/.nothing/answerfile_wget.txt" ]]; then source /.nothing/answerfile_wget.txt;
+  else source answerfile; fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # Source answerfile if conditions is met
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
-    if [[ -f "/.decrypt/decrypt.txt" ]]; then
-      source /.decrypt/decrypt.txt
-    else
-      source answerfile
-    fi
+    if [[ -f "/.decrypt/decrypt.txt" ]]; then source /.decrypt/decrypt.txt;
+    else source answerfile; fi
   fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
@@ -52,23 +44,11 @@
       MULTISELECT_MENU "${drive_selection[@]}"
     else
       if [[ "$DRIVE_path" == *"nvme"* ]]; then
-        if [[ "$HOME_partition" == "true" ]]; then
-          export DRIVE_path_boot=""$DRIVE_path"p1"
-          export DRIVE_path_home=""$DRIVE_path"p2"
-          export DRIVE_path_primary=""$DRIVE_path"p3"
-        else
-          export DRIVE_path_boot=""$DRIVE_path"p1"
-          export DRIVE_path_primary=""$DRIVE_path"p2"
-        fi
+        if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_home=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3";
+        else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_primary=""$DRIVE_path"p2"; fi
       else
-        if [[ "$HOME_partition" == "true" ]]; then
-          export DRIVE_path_boot=""$DRIVE_path"1"
-          export DRIVE_path_home=""$DRIVE_path"2"
-          export DRIVE_path_primary=""$DRIVE_path"3"
-        else
-          export DRIVE_path_boot=""$DRIVE_path"1"
-          export DRIVE_path_primary=""$DRIVE_path"2"
-        fi
+        if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_home=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3";
+        else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_primary=""$DRIVE_path"2"; fi
       fi
     fi  
     SIZE_decimal=$(df -h --output=size "$DRIVE_path")
@@ -84,13 +64,8 @@
   for ((function=0; function < "${#functions[@]}"; function++)); do
     if [[ "${functions[function]}" == "SCRIPT"* ]]; then
       if [[ "${functions[function]}" == "SCRIPT_02"* || "${functions[function]}" == "SCRIPT_03"* ]]; then
-        if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then
-          "${functions[function]}"  
-        else
-          :
-        fi    
-      else
-        "${functions[function]}"
-      fi
+        if [[ "$INTERACTIVE_INSTALL" == "true" ]]; then "${functions[function]}";
+        else :; fi    
+      else "${functions[function]}"; fi
     fi
   done

@@ -3,13 +3,8 @@
 # Parameters that customizes the system-install
 
   # BCACHEFS-support
-  if ! grep -q bcachefs "/proc/filesystems"; then
-    BCACHEFS_implemented="false"
-    BCACHEFS_notice="BCACHEFS as filesystem # NOTICE: Currently not implemented"
-  else
-    BCACHEFS_implemented="true"
-    BCACHEFS_notice="BCACHEFS as filesystem"
-  fi
+  if ! grep -q bcachefs "/proc/filesystems"; then BCACHEFS_implemented="false"; BCACHEFS_notice="BCACHEFS as filesystem # NOTICE: Currently not implemented"
+  else BCACHEFS_implemented="true"; BCACHEFS_notice="BCACHEFS as filesystem"; fi
 
   # Subvolumes to be created 
   subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" "root" "grub")
