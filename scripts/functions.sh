@@ -24,7 +24,7 @@
     elif [[ "$INIT_choice_openrc" == "true" ]]; then export INIT_choice="openrc";
     elif [[ "$INIT_choice_dinit" == "true" ]]; then export INIT_choice="dinit"; fi
     if [[ "$BOOTLOADER_choice_grub" == "true" ]]; then export BOOTLOADER_choice="grub";
-    elif [[ "$BOOTLOADER_choice_refind" == "true" ]]; then export BOOTLOADER_choice="openrc"; fi
+    elif [[ "$BOOTLOADER_choice_refind" == "true" ]]; then export BOOTLOADER_choice="refind"; fi
 }
 
   SCRIPT_03_CUSTOMIZING() {
