@@ -10,4 +10,4 @@ Target = linux-*
 [Action]
 Description = Performing btrbk pre-pacman snapshots for the following configurations...
 When = PreTransaction
-Exec = /usr/bin/btrbk run -q / --preserve
+Exec = /usr/bin/btrbk run -q /
