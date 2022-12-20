@@ -4,7 +4,7 @@
   BOOT_size="300"
   BOOT_label="BOOT"
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
-  SWAP_size="$((RAM_size * 500))"
+  SWAP_size="$((RAM_size * 1000))"
   HOME_size="NOT CHOSEN"
   HOME_label="HOME"
   PRIMARY_size="∞"

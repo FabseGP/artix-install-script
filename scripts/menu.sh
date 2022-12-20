@@ -77,8 +77,8 @@
               COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
               COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
-              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then eval selected[{5..7}]=false; toggle_option $active
-              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(8|9) ]]; then eval selected[{8..9}]=false; toggle_option $active
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then eval selected[{5..7}]=false; toggle_option $active
+              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(7|8) ]]; then eval selected[{8..9}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then eval selected[{0..1}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then :;
               else toggle_option $active; fi
@@ -95,9 +95,9 @@
             if [[ "${options[0]}" == "INTRO" ]]; then
               export COUNT_intro="${#selected[@]}"
               export values=("${selected[@]}")
-              export COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
+              export COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
               export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              export COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
+              export COUNT_bootloader=$(grep -o true <<< "${selected[@]:7:8}" | wc -l)
               if [[ "$COUNT_init" == "0" ]] && [[ "$COUNT_filesystem" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[4]}";
               elif [[ "$COUNT_init" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[5]}";
               elif [[ "$COUNT_bootloader" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[15]}";
@@ -117,11 +117,11 @@
                     PATH_cleaned=$(echo "${options[j]}" | cut -d'|' -f 1)
                     export "DRIVE_path"="$PATH_cleaned"
                     if [[ "$DRIVE_path" == *"nvme"* ]]; then
-                      if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_home=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3";
-                      else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_primary=""$DRIVE_path"p2"; fi
+                      if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_swap=""$DRIVE_path"p2"; export DRIVE_path_home=""$DRIVE_path"p3"; export DRIVE_path_primary=""$DRIVE_path"p4";
+                      else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_swap=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3"; fi
                     else
-                      if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_home=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3";
-                      else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_primary=""$DRIVE_path"2"; fi
+                      if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_swap=""$DRIVE_path"2"; export DRIVE_path_home=""$DRIVE_path"3"; export DRIVE_path_primary=""$DRIVE_path"4";
+                      else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_swap=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3"; fi
                     fi
                   fi 	  	   	  	
                 done
@@ -166,22 +166,12 @@
       if [[ "$CONFIRM" == "N" ]]; then
         if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
           PRINT_MESSAGE "PLEASE CHOOSE AN ENCRYPTION-PASSWORD!"
-          if [[ "$ZRAM" == "true" ]]; then
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-          else
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_without_swap";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_minimal"; fi
-          fi     
+          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
+          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi   
         elif [[ "$HOME_partition" == "true" ]] && [[ "$HOME_size" == "NOT CHOSEN" ]]; then
           PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
-          if [[ "$ZRAM" == "true" ]]; then
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-          else
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_without_swap";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_minimal"; fi
-          fi
+          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
+          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
         elif [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!"; PRINT_TABLE ',' "$OUTPUT_users";
         elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users";
         else CONFIRM_proceed="true"; fi
@@ -237,16 +227,14 @@
                     PROCEED="false"
                   fi
                 else
-                  if [[ "$ZRAM" == "true" ]]; then
-                    until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check ZRAM; done
-                    PROCEED="false"
-                    echo
-                  fi
+                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
+                  PROCEED="false"
+                  echo
                 fi
                 ;;
               4)
-                if [[ "$ZRAM" == "true" ]]; then
-                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check ZRAM; done
+                if [[ "$HOME_partition" == "true" ]]; then
+                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
                   PROCEED="false"
                   echo
                 fi
@@ -255,13 +243,8 @@
           done
           echo
           UPDATE_CHOICES
-          if [[ "$ZRAM" == "true" ]]; then
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-          else
-            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_without_swap";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_minimal"; fi
-          fi
+          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
+          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
         elif [[ "$1" == "LOCALS" ]]; then
           IFS=',' && read -ra user_choices <<< "$CONFIRM"
           for ((val=0; val<"${#user_choices[@]}"; val++)); do 

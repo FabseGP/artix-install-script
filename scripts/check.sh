@@ -13,15 +13,8 @@
         elif [[ "$INPUT_type" == "HOME" ]]; then
           if [[ "$DRIVE_size" -gt "$SIZE_cleaned" ]]; then PRINT_MESSAGE "Invalid size; bigger than whole drive!"; echo; PROCEED="false"            
           else export HOME_size=$DRIVE_size; PROCEED="true"; fi
-        elif [[ "$INPUT_type" == "ZRAM" ]]; then
-          export SWAP_store=$SWAP_size
-          export SWAP_size=$DRIVE_size
-          export SWAP_size_ratio=$(awk -v n=$SWAP_store 'BEGIN {printf "%.2f\n", ('"$SWAP_size"')/n}')
-          export SWAP_size_decimal=$(awk -v p=$SWAP_size_ratio -vq=$QTY 'BEGIN{printf "%.2f" ,p * 100}')
-          export SWAP_size_percentage=$(awk -v v="$SWAP_size_decimal" 'BEGIN{printf "%d", v}')        
-          if [[ "$SWAP_size_percentage" -gt 50 ]]; then SWAP_size_percentage=50; fi
-          PROCEED="true"
-        fi
+        elif [[ "$INPUT_type" == "SWAP" ]]; then
+          export SWAP_size=$((DRIVE_size * 1000)); PROCEED="true"; fi
       fi
     else PROCEED="true"; fi
 }
