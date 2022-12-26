@@ -115,7 +115,7 @@
 
   messages=(
     "figlet -c -t -k WELCOME | lolcat -a -d 3 && echo "" && figlet -c -t -k You are about to install Artix Linux! | lolcat -a -d 2" # Intro
-    "figlet -c -t -k FAREWELL - THIS TIME FOR REAL! | lolcat -a -d 3 && echo """" # Goodbye
+    "figlet -c -t -k FAREWELL - THIS TIME FOR REAL! | lolcat -a -d 3 && echo """ # Goodbye
     "To tailer the installation to your needs, you have the following options: " # Choices for customizing install
     "USAGE: Tapping SPACE reverts the value, while tapping ENTER confirms your choices! " # Usage of text-menu
     "AM I A JOKE TO YOU?! YOU DIDN'T EVEN BOTHER TO CHOOSE AN INIT NOR A FILESYSTEM!" # Usage of text-menu
