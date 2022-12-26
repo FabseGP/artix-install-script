@@ -75,11 +75,11 @@
           space)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
-              COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
-              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then eval selected[{5..7}]=false; toggle_option $active
-              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(7|8) ]]; then eval selected[{8..9}]=false; toggle_option $active
+              COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
+              COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:1}" | wc -l)
+              COUNT_bootloader=$(grep -o true <<< "${selected[@]:7:8}" | wc -l)
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then eval selected[{4..6}]=false; toggle_option $active
+              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(7|8) ]]; then eval selected[{7..8}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then eval selected[{0..1}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then :;
               else toggle_option $active; fi
