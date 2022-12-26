@@ -3,6 +3,7 @@
 # DO NOT TOUCH!
 
   BEGINNER_DIR=$(pwd)
+  MODE="$1"
   source scripts/output.sh
   source scripts/check.sh
   source scripts/variables.sh
