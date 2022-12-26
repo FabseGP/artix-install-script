@@ -55,14 +55,14 @@
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
         mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart SWAP swap "$BOOT_size"MiB "$SWAP_size"MiB \
+        mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
         mkpart HOME "$SWAP_size"MiB "$HOME_size"GiB \
         mkpart PRIMARY "$HOME_size"GiB 100% 
     else
       parted --script -a optimal "$DRIVE_path" \
         mklabel gpt \
         mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart SWAP swap "$BOOT_size"MiB "$SWAP_size"MiB \
+        mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
         mkpart PRIMARY "$SWAP_size"MiB 100% 
     fi
 }
@@ -141,8 +141,8 @@
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$HOME_partition" == "true" ]]; then
-        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount -o /dev/mapper/crypthome /mnt/home;
-        else mount -o "$DRIVE_path_home" /mnt/home; fi
+        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount /dev/mapper/crypthome -o /mnt/home;
+        else mount "$DRIVE_path_home" /mnt/home; fi
         mkdir /mnt/home/btrbk_snapshots
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then echo "NOT READY"; fi
