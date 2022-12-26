@@ -135,7 +135,7 @@
             else mount -o subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"; fi  
           elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then mkdir -p /mnt/boot/{efi,grub}; mount -o nodev,noexec,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub; fi
         fi
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then echo "NOT READY"; fi
     done
     sync
     cd "$BEGINNER_DIR" || exit
@@ -146,7 +146,7 @@
         else mount -o "$DRIVE_path_home" /mnt/home; fi
         mkdir /mnt/home/btrbk_snapshots
       fi
-    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
+    elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then echo "NOT READY"; fi
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
@@ -338,7 +338,10 @@ EOF
           cp grub-pre.cfg /.secret
           rm -rf {/tmp/image,grub-pre.cfg}
         fi
-      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
+      elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then 
+        grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
+        grub-mkconfig -o /boot/grub/grub.cfg
+      fi
       if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
         sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
