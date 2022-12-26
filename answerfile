@@ -14,20 +14,20 @@
 
   DRIVE_path="" # Absolute path; e.g. "/dev/nvme0n1" or "/dev/sda"
                 # Or "ASK" if wanted to be prompted before install
-  FILESYSTEM_primary_btrfs="true" 
+  FILESYSTEM_primary_btrfs="" 
   FILESYSTEM_primary_bcachefs="" # NOT YET IN KERNEL; LEAVE EMPTY
-  ENCRYPTION_partitions="" # "true" or "false"
+  ENCRYPTION_partitions="true" # "true" or "false"
 
 # ------ ONLY MODIFY BELOW IF ENCRYPTION_partitions IS "true" ------ 
 
-  ENCRYPTION_passwd="UNSPECIFIED"
+  ENCRYPTION_passwd=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # boot-partition
 
-  BOOT_size="300" # In megabytes; minimum 300 MB is required
-  BOOT_label="UNSPECIFIED" # Maximum 11 characters with FAT32
+  BOOT_size="" # In megabytes; minimum 300 MB is required
+  BOOT_label="" # Maximum 11 characters with FAT32
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -37,24 +37,25 @@
 
 # ------ ONLY MODIFY BELOW IF HOME_partition IS "true" ------ 
 
-  HOME_size="200" # In gigabytes; the rest is filled by /
-  HOME_label="UNSPECIFIED"
+  HOME_size="" # In gigabytes; the rest is filled by /
+  HOME_label=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
-# zram-partition; modern replacement for swap-partition
+# swap-partition
 
-  ZRAM="" # "true" or "false"
+  SWAP_partition="" # "true" or "false"
 
 # ------ ONLY MODIFY BELOW IF SWAP_partition IS "true" ------ 
 
-  SWAP_size_percentage="20" # Written in percentage of RAM, e.g. 2GB out of 8GB RAM = 25, though maximum 50
+  SWAP_size="" # If BOOT_size = 300MB and the swap-partition should be 8000MB
+  SWAP_label="" 
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # primary-partition
 
-  PRIMARY_label="UNSPECIFIED"
+  PRIMARY_label=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -65,8 +66,8 @@
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # bootloader
-
-  BOOTLOADER_choice="" # "grub" or "dinit"
+  
+  BOOTLOADER_choice="" # "grub" or "refind"
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
@@ -87,26 +88,26 @@
 
 # locals
 
-  TIMEZONE="UNSPECIFIED" # e.g. "Europe/Copenhagen"
-  LANGUAGES_generate="UNSPECIFIED" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
-  LANGUAGE_system="UNSPECIFIED"
-  KEYMAP_system="UNSPECIFIED"
-  HOSTNAME_system="UNSPECIFIED"
+  TIMEZONE="" # e.g. "Europe/Copenhagen"
+  LANGUAGES_generate="" # Must be space-separated; e.g. "da_DK.UTF-8 en_GB.UTF-8"
+  LANGUAGE_system=""
+  KEYMAP_system=""
+  HOSTNAME_system=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # users
 
-  ROOT_passwd="UNSPECIFIED" 
-  USERNAME="UNSPECIFIED"
-  USER_passwd="UNSPECIFIED"
+  ROOT_passwd="" 
+  USERNAME=""
+  USER_passwd=""
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # miscellaneous
 
-  BOOTLOADER_label="UNSPECIFIED"
-  PACKAGES_additional="NONE" # Must be space-separated; e.g. "firefox kicad"
+  BOOTLOADER_label=""
+  PACKAGES_additional="" # Must be space-separated; e.g. "firefox kicad"
                              # Keep "NONE" as value, if no other packages should be installed
   POST_script="" # "true": fetches and execute specified script as regular user from an git-repository
                  # "false": does nothing
