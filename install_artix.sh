@@ -44,11 +44,19 @@
       MULTISELECT_MENU "${drive_selection[@]}"
     else
       if [[ "$DRIVE_path" == *"nvme"* ]]; then
-        if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_home=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3";
-        else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_primary=""$DRIVE_path"p2"; fi
+        if [[ "$HOME_partition" == "true" ]]; then
+          if [[ "$SWAP_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_swap=""$DRIVE_path"p2"; export DRIVE_path_home=""$DRIVE_path"p3"; export DRIVE_path_primary=""$DRIVE_path"p4";
+          else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_home=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3"; fi
+        else 
+          if [[ "$SWAP_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_swap=""$DRIVE_path"p2"; export DRIVE_path_primary=""$DRIVE_path"p3";
+          else export DRIVE_path_boot=""$DRIVE_path"p1"; export DRIVE_path_primary=""$DRIVE_path"p2"; fi; fi
       else
-        if [[ "$HOME_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_home=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3";
-        else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_primary=""$DRIVE_path"2"; fi
+        if [[ "$HOME_partition" == "true" ]]; then
+          if [[ "$SWAP_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_swap=""$DRIVE_path"2"; export DRIVE_path_home=""$DRIVE_path"3"; export DRIVE_path_primary=""$DRIVE_path"4";
+          else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_home=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3"; fi
+        else 
+          if [[ "$SWAP_partition" == "true" ]]; then export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_swap=""$DRIVE_path"2"; export DRIVE_path_primary=""$DRIVE_path"3";
+          else export DRIVE_path_boot=""$DRIVE_path"1"; export DRIVE_path_primary=""$DRIVE_path"2"; fi; fi
       fi
     fi  
     SIZE_decimal=$(df -h --output=size "$DRIVE_path")
