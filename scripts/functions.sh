@@ -35,9 +35,15 @@
     PRINT_MESSAGE "${messages[9]}" 
     if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full"; CUSTOMIZING_INSTALL PARTITIONS_full;
     else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; CUSTOMIZING_INSTALL PARTITIONS_without_home; fi
-    PRINT_MESSAGE "${messages[10]}" && PRINT_TABLE ',' "$OUTPUT_locals" && CUSTOMIZING_INSTALL LOCALS
-    PRINT_MESSAGE "${messages[11]}" && PRINT_TABLE ',' "$OUTPUT_users" && CUSTOMIZING_INSTALL USERS
-    PRINT_MESSAGE "${messages[12]}" && PRINT_TABLE ',' "$OUTPUT_miscellaneous" && CUSTOMIZING_INSTALL MISCELLANEOUS
+    PRINT_MESSAGE "${messages[10]}" 
+    PRINT_TABLE ',' "$OUTPUT_locals" 
+    CUSTOMIZING_INSTALL LOCALS
+    PRINT_MESSAGE "${messages[11]}" 
+    PRINT_TABLE ',' "$OUTPUT_users" 
+    CUSTOMIZING_INSTALL USERS
+    PRINT_MESSAGE "${messages[12]}" 
+    PRINT_TABLE ',' "$OUTPUT_miscellaneous" 
+    CUSTOMIZING_INSTALL MISCELLANEOUS
 }
 
   SCRIPT_04_UMOUNT_MNT() {
@@ -194,7 +200,8 @@ EOF
     hwclock --systohc
     # Language(s)
     j=1
-    IFS=' ' && read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
+    IFS=' ' 
+    read -ra LANGUAGES_array <<< "$LANGUAGES_generate"
     for language in "${LANGUAGES_array[@]}"; do sed -i '/'"$language"'/s/^#//g' /etc/locale.gen; done
     locale-gen
     echo "LANG="$LANGUAGE_system"" >> /etc/locale.conf
@@ -313,7 +320,7 @@ EOF
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
         sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
         if [[ "$ENCRYPTION_partitions" == "true" ]] && ! [[ "$HOME_partition" == "true" ]]; then	
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
           sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
           sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
           grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -333,12 +340,12 @@ EOF
         fi
       elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then :; fi
       if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         grub-mkconfig -o /boot/grub/grub.cfg
       fi
       if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$HOME_partition" == "true" ]]; then
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         grub-mkconfig -o /boot/grub/grub.cfg
       fi

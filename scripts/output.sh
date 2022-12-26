@@ -67,7 +67,8 @@
     if ! [[ "${delimiter}" == "" ]] && [[ "$(EMPTY_STRING "${data}")" = "false" ]]; then
       local -r numberOfLines="$(wc -l <<< "${data}")"
       if [[ "${numberOfLines}" -gt "0" ]]; then
-        local table="" && local i=1
+        local table="" 
+        local i=1
         for ((i=1; i<="${numberOfLines}"; i++)); do
           local line=""
           line="$(sed "${i}q;d" <<< "${data}")"
@@ -98,8 +99,9 @@
 
   EMPTY_STRING() {
     local -r string="${1}"
-    if [[ "$(TRIM_STRING "${string}")" = "" ]]; then echo 'true' && return 0; fi
-    echo 'false' && return 1
+    if [[ "$(TRIM_STRING "${string}")" = "" ]]; then echo 'true'; return 0; fi
+    echo 'false' 
+    return 1
 }
 
   TRIM_STRING() {
@@ -112,7 +114,7 @@
 # Messages to print
 
   messages=(
-    "figlet -c -t -k WELCOME | lolcat -a -d 3 && echo && figlet -c -t -k You are about to install Artix Linux! | lolcat -a -d 2" # Intro
+    "figlet -c -t -k WELCOME | lolcat -a -d 3 echo && figlet -c -t -k You are about to install Artix Linux! | lolcat -a -d 2" # Intro
     "figlet -c -t -k FAREWELL - THIS TIME FOR REAL! | lolcat -a -d 3 && echo" # Goodbye
     "To tailer the installation to your needs, you have the following options: " # Choices for customizing install
     "USAGE: Tapping SPACE reverts the value, while tapping ENTER confirms your choices! " # Usage of text-menu

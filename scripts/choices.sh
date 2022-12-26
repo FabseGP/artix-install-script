@@ -7,7 +7,7 @@
   else BCACHEFS_implemented="true"; BCACHEFS_notice="BCACHEFS as filesystem"; fi
 
   # Subvolumes to be created 
-  subvolumes=(\@ "home" "var/cache" "var/log" "var/spool" "var/tmp" "opt" "srv" "root" "grub")
+  subvolumes=(\@ "home" "var/cache" "var/log" "var/tmp" "opt" "srv" "root" "grub")
 
   # Groups which user is added to 
   export USER_groups="wheel,realtime,video,audio,network,uucp,input,storage,disk,lp,scanner,games"

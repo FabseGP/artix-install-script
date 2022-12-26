@@ -36,7 +36,8 @@
         if [[ "${options[0]}" == "INTRO" ]]; then selected=("true"); printf "\n"; fi
         for ((i=1; i<${#options[@]}; i++)); do selected+=("${values[i]}"); printf "\n"; done
       fi
-      lastrow=$(get_cursor_row) && startrow=$((lastrow - ${#options[@]}))
+      lastrow=$(get_cursor_row) 
+      startrow=$((lastrow - ${#options[@]}))
       trap "cursor_blink_on; stty echo; printf '\n'; exit" 2
       cursor_blink_off
       key_input() { 
@@ -83,7 +84,8 @@
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then :;
               else toggle_option $active; fi
             elif [[ "${options[0]}" == "DRIVE_SELECTION" ]]; then
-              DRIVES="$((${#options[@]} - 2))" && COUNT_drive=$(grep -o true <<< "${selected[@]}" | wc -l)
+              DRIVES="$((${#options[@]} - 2))" 
+              COUNT_drive=$(grep -o true <<< "${selected[@]}" | wc -l)
               if [[ "$COUNT_drive" -eq "1" ]]; then
                 for i in $(eval "echo {0..$DRIVES}"); do eval selected[i]=false; done 	  	
                 toggle_option $active	
@@ -147,7 +149,9 @@
             ;;
         esac
       done
-      cursor_to "$lastrow" && printf "\n" && cursor_blink_on
+      cursor_to "$lastrow" 
+      printf "\n" 
+      cursor_blink_on
       eval $return_value='("${selected[@]}")'
     done
     PROCEED=""
@@ -160,7 +164,9 @@
 
   CUSTOMIZING_INSTALL() {
     while ! [[ "$CONFIRM_proceed" == "true" ]]; do
-      PROCEED="false" && echo && IFS=
+      PROCEED="false" 
+      echo 
+      IFS=
       read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
@@ -179,7 +185,8 @@
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
         if [[ "$CONFIRM" == "A" ]]; then CONFIRM="1,2,3,4"; fi
         if [[ "$1" == "PARTITIONS_full" ]] || [[ "$1" == "PARTITIONS_without_home" ]] || [[ "$1" == "PARTITIONS_without_swap" ]] || [[ "$1" == "PARTITIONS_minimal" ]]; then
-          IFS=',' && read -ra user_choices <<< "$CONFIRM"
+          IFS=',' 
+          read -ra user_choices <<< "$CONFIRM"
           for ((val=0; val<"${#user_choices[@]}"; val++)); do 
             case ${user_choices[$val]} in
               1)           
@@ -246,7 +253,8 @@
           if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
           else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
         elif [[ "$1" == "LOCALS" ]]; then
-          IFS=',' && read -ra user_choices <<< "$CONFIRM"
+          IFS=',' 
+          read -ra user_choices <<< "$CONFIRM"
           for ((val=0; val<"${#user_choices[@]}"; val++)); do 
             case ${user_choices[$val]} in
               1)
