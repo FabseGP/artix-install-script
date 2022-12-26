@@ -170,7 +170,15 @@
       read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
-        if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
+        if [[ "$BOOT_size" == "" ]]; then
+          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR BOOT-PARTITION!"
+          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
+          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
+        elif [[ "$SWAP_partition" == "true" ]] && [[ "$SWAP_size" == "" ]]; then
+          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR SWAP-PARTITION!"
+          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
+          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
+        elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
           PRINT_MESSAGE "PLEASE CHOOSE AN ENCRYPTION-PASSWORD!"
           if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
           else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi   

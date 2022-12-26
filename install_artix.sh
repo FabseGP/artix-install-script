@@ -25,6 +25,7 @@
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
     if [[ -f "/.decrypt/decrypt.txt" ]]; then source /.decrypt/decrypt.txt;
     else source answerfile; fi
+    source scripts/variables.sh
   fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
