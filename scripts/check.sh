@@ -44,7 +44,8 @@
 
   LANGUAGE_check() {
     if [[ "$1" == "generate" ]]; then
-      IFS=',' && read -ra languages <<< "$LANGUAGES_generate_export"
+      IFS=','
+      read -ra languages <<< "$LANGUAGES_generate_export"
       if ! [[ "$LANGUAGES_generate_export" == "" ]]; then
         for ((val=0; val < "${#languages[@]}"; val++)); do 
           if grep -Eq "#${languages[$val]} UTF-8" /etc/locale.gen; then correct="true";
@@ -85,7 +86,8 @@
   PACKAGES_check() {
     if ! [[ "$PACKAGES_additional_export" == "NONE" ]]; then
       unavailable_packages="0"
-      IFS="," && read -ra packages_to_install <<< "$PACKAGES_additional_export"
+      IFS="," 
+      read -ra packages_to_install <<< "$PACKAGES_additional_export"
       for ((val=0; val<"${#packages_to_install[@]}"; val++)); do 
         if ! [[ $(pacman -Si "${packages_to_install[$val]}") ]] ; then echo "${packages_to_install[$val]} is not found in repos!"; unavailable_packages+=1; fi
       done

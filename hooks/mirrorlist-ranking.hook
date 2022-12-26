@@ -2,8 +2,7 @@
 Operation = Install
 Operation = Upgrade
 Type = Package
-Target = artix-mirrorlist
-Target = artix-archlinux-support
+Target = *-mirrorlist
 
 [Action]
 Description = Ranking mirrors...
