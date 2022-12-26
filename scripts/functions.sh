@@ -131,7 +131,6 @@
           if ! [[ "${subvolumes[subvolume]}" == "grub" ]]; then mkdir -p /mnt/"${subvolumes[subvolume]}";
             if [[ "${subvolumes[subvolume]}" == "home" ]]; then
               if ! [[ "$HOME_partition" == "true" ]]; then mount -o subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"; fi
-            fi
             else mount -o subvol="@/${subvolumes[subvolume]}" "$MOUNTPOINT" /mnt/"$subvolume_path"; fi  
           elif [[ "${subvolumes[subvolume]}" == "grub" ]]; then mkdir -p /mnt/boot/{efi,grub}; mount -o nodev,noexec,nosuid,subvol="@/boot/grub" "$MOUNTPOINT" /mnt/boot/grub; fi
         fi
