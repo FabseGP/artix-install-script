@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
   BEGINNER_DIR=$(pwd)
-  if [[ "$(find /install_script/configs -name pacman.conf)" ]]; then
+  if [[ "$(find /install_script/configs -name paru.conf)" ]]; then
     cp /install_script/configs/pacman_without_arch.conf /etc/pacman.conf
     pacman -Sy --noconfirm artix-keyring
     rm -r /etc/pacman.d/gnupg
