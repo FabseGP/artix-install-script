@@ -69,6 +69,10 @@
 
   SCRIPT_06_FORMAT_AND_ENCRYPT_PARTITIONS() {
     mkfs.vfat -F32 -n "$BOOT_label" "$DRIVE_path_boot" 
+    if [[ "$SWAP_partition" == "true" ]]; then
+      mkswap -L "$SWAP_label" "$DRIVE_path_swap"
+      swapon "$DRIVE_path_swap"
+    fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         if [[ "$HOME_partition" == "true" ]]; then
