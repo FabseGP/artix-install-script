@@ -141,8 +141,8 @@
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$HOME_partition" == "true" ]]; then
-        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount /dev/mapper/crypthome -o /mnt/home;
-        else mount "$DRIVE_path_home" /mnt/home; fi
+        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount /dev/mapper/crypthome -o noatime,compress-force=zstd:1,discard=async,autodefrag /mnt/home;
+        else mount "$DRIVE_path_home" -o noatime,compress-force=zstd:1,discard=async,autodefrag /mnt/home; fi
         mkdir /mnt/home/btrbk_snapshots
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then echo "NOT READY"; fi
