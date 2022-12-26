@@ -385,19 +385,19 @@ EOF
       cp services/runit/ananicy/* /etc/runit/sv/ananicy-cpp
       ln -s /etc/runit/sv/ananicy-cpp /etc/runit/runsvdir/default
     elif [[ "$INIT_choice" == "dinit" ]]; then
-      cp services/dinit/ananicy/ananicy-cpp-dinit /etc/dinit/ananicy-cpp
+      cp services/dinit/ananicy/ananicy-cpp-dinit /etc/dinit.d/ananicy-cpp
       ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then cp services/cron/weekly/btrfs_health /etc/cron.weekly; fi
-    cp scripts/{ranking-mirrors,grub-update} /usr/share/libalpm/scripts
+    cp scripts/{ranking-mirrors.sh,grub-update.sh} /usr/share/libalpm/scripts
     cp hooks/* /etc/pacman.d/hooks
-    pacman -S --noconfirm artix-mirrorlist artix-archlinux-support
+    pacman -S --noconfirm artix-mirrorlist
     cd /install_script/packages || exit
     PACDIFF="$(ls -- *pacdiff-*)"
     pacman -U --noconfirm $PACDIFF
     cd $BEGINNER_DIR || exit
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
-      cp configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/; fi
+      cp /install_script/configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/; fi
     touch /etc/{sysctl.conf,sysfs.conf}
     cat << EOF | tee -a /etc/sysctl.conf > /dev/null
 vm.swappiness = 30
