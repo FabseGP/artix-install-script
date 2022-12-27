@@ -86,7 +86,7 @@
     if [[ "$SWAP_partition" == "true" ]]; then
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
       swapon "$DRIVE_path_swap"
-	  export UUID_swap=$(blkid -s UUID -o value "$DRIVE_path_swap")
+	    export UUID_swap=$(blkid -s UUID -o value "$DRIVE_path_swap")
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
@@ -96,7 +96,7 @@
           mkfs.btrfs -f -L "$HOME_label" /dev/mapper/crypthome
           mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
           MOUNTPOINT="$DRIVE_path_primary"
-		  export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
+		      export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
         else
           echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
           echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_primary" cryptroot
@@ -113,7 +113,7 @@
         if [[ "$HOME_partition" == "true" ]]; then
           bcachefs format -f --encrypted --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home"
           bcachefs unlock "$DRIVE_path_home"
-		  export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
+		      export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
         else
           bcachefs format -f --encrypted --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"
           bcachefs unlock "$DRIVE_path_primary"
@@ -419,7 +419,7 @@ EOF
     pacman -U --noconfirm $PACDIFF
     cd $BEGINNER_DIR || exit
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
-      pacman -Syu --noconirm polkit
+      pacman -Syu --noconfirm polkit
       cp /install_script/configs/50-org.freedesktop.NetworkManager.rules /etc/polkit-1/rules.d/; fi
     touch /etc/{sysctl.conf,sysfs.conf}
     cat << EOF | tee -a /etc/sysctl.conf > /dev/null
@@ -431,12 +431,12 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      export basename=$(basename $POST_install_script)
-      export basename_clean=${basename%.*}
+      export script_name_input=$(basename $POST_install_script)
+      export script_name=${script_name_input%.*}
       if [[ "$REPLACE_sudo" == "true" ]]; then echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null;
       else echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null; fi
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename_clean"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
-      rm -rf /home/$USERNAME/$basename_clean
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$script_name"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
+      rm -rf /home/$USERNAME/$script_name
       if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
       else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
     fi
