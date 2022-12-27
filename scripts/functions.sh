@@ -195,7 +195,7 @@
 home UUID=$UUID_home none discard,luks,timeout=300
 EOF
     fi
-	if [[ "SWAP_partition" == "true" ]]; then
+	if [[ "$SWAP_partition" == "true" ]]; then
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 swap UUID=$UUID_swap /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
 EOF
@@ -311,7 +311,8 @@ EOF
       dd bs=512 count=6 if=/dev/random of=/.secret/crypto_keyfile.bin iflag=fullblock
       chmod 600 /.secret/crypto_keyfile.bin
       chmod 600 /boot/booster-linux*
-      echo "$ENCRYPTION_passwd" | cryptsetup luksAddKey "$DRIVE_path_primary" /.secret/crypto_keyfile.bin
+      if ! [[ "$HOME_partition" == "true" ]]; then
+        echo "$ENCRYPTION_passwd" | cryptsetup luksAddKey "$DRIVE_path_primary" /.secret/crypto_keyfile.bin; fi
     fi
 }
 
