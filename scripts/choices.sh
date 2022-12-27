@@ -24,6 +24,7 @@
     "FILESYSTEM_primary_btrfs:BTRFS as filesystem"
     "FILESYSTEM_primary_bcachefs:$BCACHEFS_notice"
     "HOME_partition:Make a separate /home-partition"
+	"SWAP_partition:Create a swap-partition"
     "ENCRYPTION_partitions:Encryption" 
     "INIT_choice_runit:runit as init" 
     "INIT_choice_openrc:openrc as init" 
@@ -55,14 +56,14 @@
     read -r -d '' OUTPUT_partitions_full << EOM
 $PARTITIONS_full
 SIZE:,$BOOT_size MB,$HOME_size GB,$PRIMARY_size GB,$SWAP_size MB
-LABEL:,$BOOT_label,$HOME_label,$PRIMARY_label
+LABEL:,$BOOT_label,$HOME_label,$PRIMARY_label,$SWAP_label
 ENCRYPTION-password:,,,$ENCRYPTION_passwd
 EOM
 
     read -r -d '' OUTPUT_partitions_without_home << EOM
 $PARTITIONS_without_home
 SIZE:,$BOOT_size MB,$PRIMARY_size GB,$SWAP_size MB
-LABEL:,$BOOT_label,$PRIMARY_label
+LABEL:,$BOOT_label,$PRIMARY_label,$SWAP_label
 ENCRYPTION-password:,,$ENCRYPTION_passwd
 EOM
 

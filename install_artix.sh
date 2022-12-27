@@ -15,19 +15,16 @@
     if [[ -f "/.encrypt/answer_encrypt.txt" ]]; then openssl enc -aes-256-cbc -md sha512 -a -d -pbkdf2 -iter 100000 -in /.encrypt/answer_encrypt.txt -out /.decrypt/decrypt.txt -pass file:/.nothing/nothing.txt; source /.decrypt/decrypt.txt; 
     elif [[ -f "/.nothing/answerfile_wget.txt" ]]; then source /.nothing/answerfile_wget.txt;
     else source answerfile; fi
-  else
-    source answerfile; fi
+  else source answerfile; fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
 
 # Source answerfile if conditions is met
 
   if [[ "$INTERACTIVE_INSTALL" == "false" ]]; then
-    if [[ -f "/.decrypt/decrypt.txt" ]]; then source /.decrypt/decrypt.txt;
-    else source answerfile; fi
-  else
-    source scripts/variables.sh
-  fi
+    if [[ -f "/.decrypt/decrypt.txt" ]]; then source /.decrypt/decrypt.txt; 
+	else source answerfile; fi
+  else source scripts/variables.sh; fi
 
 #----------------------------------------------------------------------------------------------------------------------------------
 

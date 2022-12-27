@@ -26,6 +26,7 @@
         if [[ "${#DRIVE_label}" -ge "11" ]]; then echo; PRINT_MESSAGE "Maximum 11 characters is allowed for FAT32!"; PROCEED="false"
         else export BOOT_label=$DRIVE_label; PROCEED="true"; fi
       elif [[ "$INPUT_type" == "HOME" ]]; then export HOME_label=$DRIVE_label; PROCEED="true"
+      elif [[ "$INPUT_type" == "SWAP" ]]; then export SWAP_label=$DRIVE_label; PROCEED="true"
       elif [[ "$INPUT_type" == "PRIMARY" ]]; then export PRIMARY_label=$DRIVE_label; PROCEED="true"; fi
     else PROCEED="true"; fi
 }
