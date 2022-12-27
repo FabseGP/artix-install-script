@@ -75,11 +75,11 @@
           space)  
             print_options -1 
             if [[ "${options[0]}" == "INTRO" ]]; then
-              COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
+              COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:1}" | wc -l)
-              COUNT_bootloader=$(grep -o true <<< "${selected[@]:7:8}" | wc -l)
-              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(4|5|6) ]]; then eval selected[{4..6}]=false; toggle_option $active
-              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(7|8) ]]; then eval selected[{7..8}]=false; toggle_option $active
+              COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
+              if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then eval selected[{5..7}]=false; toggle_option $active
+              elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(8|9) ]]; then eval selected[{8..9}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then eval selected[{0..1}]=false; toggle_option $active
               elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then :;
               else toggle_option $active; fi
@@ -97,9 +97,9 @@
             if [[ "${options[0]}" == "INTRO" ]]; then
               export COUNT_intro="${#selected[@]}"
               export values=("${selected[@]}")
-              export COUNT_init=$(grep -o true <<< "${selected[@]:4:6}" | wc -l)
+              export COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
               export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
-              export COUNT_bootloader=$(grep -o true <<< "${selected[@]:7:8}" | wc -l)
+              export COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
               if [[ "$COUNT_init" == "0" ]] && [[ "$COUNT_filesystem" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[4]}";
               elif [[ "$COUNT_init" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[5]}";
               elif [[ "$COUNT_bootloader" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[15]}";
@@ -170,29 +170,32 @@
       read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
-        if [[ "$BOOT_size" == "" ]]; then
-          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR BOOT-PARTITION!"
-          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
-          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-        elif [[ "$SWAP_partition" == "true" ]] && [[ "$SWAP_size" == "" ]]; then
-          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR SWAP-PARTITION!"
-          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
-          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-        elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
-          PRINT_MESSAGE "PLEASE CHOOSE AN ENCRYPTION-PASSWORD!"
-          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi   
-        elif [[ "$HOME_partition" == "true" ]] && [[ "$HOME_size" == "NOT CHOSEN" ]]; then
-          PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
-          if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-          else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
-        elif [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!"; PRINT_TABLE ',' "$OUTPUT_users";
-        elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users";
+	    if [[ "$1" == PARTITIONS_* ]]; then
+          if [[ "$BOOT_size" == "" ]]; then
+            PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR BOOT-PARTITION!"
+            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
+            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
+          elif [[ "$SWAP_partition" == "true" ]] && [[ "$SWAP_size" == "" ]]; then
+            PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR SWAP-PARTITION!"
+            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
+            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi
+          elif [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$ENCRYPTION_passwd" == "NOT CHOSEN" ]]; then
+            PRINT_MESSAGE "PLEASE CHOOSE AN ENCRYPTION-PASSWORD!"
+            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
+            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi   
+          elif [[ "$HOME_partition" == "true" ]] && [[ "$HOME_size" == "NOT CHOSEN" ]]; then
+            PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
+            if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
+            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi; fi
+        elif [[ "$1" == "USERS" ]]; then
+          if [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!"; PRINT_TABLE ',' "$OUTPUT_users";
+          elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users"; fi
         else CONFIRM_proceed="true"; fi
+	
       elif [[ "$CONFIRM" == "RETURN TO START" ]]; then ./$(basename "$0") restart; exit 2;
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
         if [[ "$CONFIRM" == "A" ]]; then CONFIRM="1,2,3,4"; fi
-        if [[ "$1" == "PARTITIONS_full" ]] || [[ "$1" == "PARTITIONS_without_home" ]] || [[ "$1" == "PARTITIONS_without_swap" ]] || [[ "$1" == "PARTITIONS_minimal" ]]; then
+        if [[ "$1" == PARTITIONS_* ]]; then
           IFS=',' 
           read -ra user_choices <<< "$CONFIRM"
           for ((val=0; val<"${#user_choices[@]}"; val++)); do 
@@ -242,14 +245,19 @@
                     PROCEED="false"
                   fi
                 else
-                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
-                  PROCEED="false"
-                  echo
+                  if [[ "$SWAP_partition" == "true" ]]; then
+                    until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
+                    PROCEED="false"
+                    until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition label (leave empty for default): " DRIVE_label; LABEL_check SWAP; done
+                    PROCEED="false"
+                    echo; fi
                 fi
                 ;;
               4)
-                if [[ "$HOME_partition" == "true" ]]; then
+                if [[ "$HOME_partition" == "true" ]] && [[ "SWAP_partition" == "true" ]]; then
                   until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
+                  PROCEED="false"
+                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition label (leave empty for default): " DRIVE_label; LABEL_check SWAP; done
                   PROCEED="false"
                   echo
                 fi

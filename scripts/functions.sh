@@ -33,6 +33,7 @@
     UPDATE_CHOICES
     MULTISELECT_MENU "${drive_selection[@]}"
     PRINT_MESSAGE "${messages[9]}" 
+	if ! [[ "$SWAP_partition" == "true" ]]; then export SWAP_size="IGNORED"; export SWAP_label="IGNORED"; fi
     if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full"; CUSTOMIZING_INSTALL PARTITIONS_full;
     else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; CUSTOMIZING_INSTALL PARTITIONS_without_home; fi
     PRINT_MESSAGE "${messages[10]}" 
@@ -52,18 +53,31 @@
 
   SCRIPT_05_CREATE_PARTITIONS() {
     if [[ "$HOME_partition" == "true" ]]; then
-      parted --script -a optimal "$DRIVE_path" \
-        mklabel gpt \
-        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
-        mkpart HOME "$SWAP_size"MiB "$HOME_size"GiB \
-        mkpart PRIMARY "$HOME_size"GiB 100% 
+	  if [[ "$SWAP_partition" == "true" ]]; then
+        parted --script -a optimal "$DRIVE_path" \
+          mklabel gpt \
+          mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
+          mkpart HOME "$SWAP_size"MiB "$HOME_size"GiB \
+          mkpart PRIMARY "$HOME_size"GiB 100% 
+	  else
+        parted --script -a optimal "$DRIVE_path" \
+          mklabel gpt \
+          mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+          mkpart HOME "$BOOT_size"MiB "$HOME_size"GiB \
+          mkpart PRIMARY "$HOME_size"GiB 100%; fi
     else
-      parted --script -a optimal "$DRIVE_path" \
-        mklabel gpt \
-        mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-        mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
-        mkpart PRIMARY "$SWAP_size"MiB 100% 
+	  if [[ "$SWAP_partition" == "true" ]]; then
+        parted --script -a optimal "$DRIVE_path" \
+          mklabel gpt \
+          mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
+          mkpart PRIMARY "$SWAP_size"MiB 100% 
+	  else
+        parted --script -a optimal "$DRIVE_path" \
+          mklabel gpt \
+          mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
+          mkpart PRIMARY "$BOOT_size"MiB 100%; fi
     fi
 }
 
@@ -72,6 +86,7 @@
     if [[ "$SWAP_partition" == "true" ]]; then
       mkswap -L "$SWAP_label" "$DRIVE_path_swap"
       swapon "$DRIVE_path_swap"
+	  export UUID_swap=$(blkid -s UUID -o value "$DRIVE_path_swap")
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
@@ -81,6 +96,7 @@
           mkfs.btrfs -f -L "$HOME_label" /dev/mapper/crypthome
           mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
           MOUNTPOINT="$DRIVE_path_primary"
+		  export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
         else
           echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
           echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_primary" cryptroot
@@ -90,13 +106,14 @@
       else
         mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
         MOUNTPOINT="$DRIVE_path_primary"
-        if [[ "$HOME_partition" == "true" ]]; then mkfs.btrfs -f -L "$HOME_label" "$DRIVE_path_home"; fi
+        if [[ "$HOME_partition" == "true" ]]; then mkfs.btrfs -f -L "$HOME_label" "$DRIVE_path_home"; export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home"); fi
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         if [[ "$HOME_partition" == "true" ]]; then
           bcachefs format -f --encrypted --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home"
           bcachefs unlock "$DRIVE_path_home"
+		  export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
         else
           bcachefs format -f --encrypted --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary"
           bcachefs unlock "$DRIVE_path_primary"
@@ -104,7 +121,7 @@
         MOUNTPOINT="$DRIVE_path_primary"
       else
         bcachefs format -f --compression_type=zstd -L "$PRIMARY_label" "$DRIVE_path_primary" 
-        if [[ "$HOME_partition" == "true" ]]; then bcachefs format -f --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home" ; fi       
+        if [[ "$HOME_partition" == "true" ]]; then bcachefs format -f --compression_type=zstd -L "$HOME_label" "$DRIVE_path_home"; export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home"); fi       
       fi
     fi
 }
@@ -112,8 +129,6 @@
   SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
-    export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
-    export UUID_swap=$(blkid -s UUID -o value "$DRIVE_path_swap")
     mount -o noatime,compress-force=zstd:1,discard=async,autodefrag "$MOUNTPOINT" /mnt
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
@@ -180,10 +195,11 @@
 home UUID=$UUID_home none discard,luks,timeout=300
 EOF
     fi
-    cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
+	if [[ "SWAP_partition" == "true" ]]; then
+      cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 swap UUID=$UUID_swap /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
 EOF
-    sed -i 's/.*none      	swap      	defaults.*/\/dev\/mapper\/swap  	none      	swap      	defaults  	0 0/' /mnt/etc/fstab
+      sed -i 's/.*none      	swap      	defaults.*/\/dev\/mapper\/swap  	none      	swap      	defaults  	0 0/' /mnt/etc/fstab; fi
 }
 
   SCRIPT_10_CHROOT() {
