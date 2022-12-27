@@ -195,7 +195,7 @@
 home UUID=$UUID_home none discard,luks,timeout=300
 EOF
     fi
-	if [[ "$SWAP_partition" == "true" ]]; then
+  	if [[ "$SWAP_partition" == "true" ]]; then
       cat << EOF | tee -a /mnt/etc/crypttab > /dev/null
 swap UUID=$UUID_swap /dev/urandom  swap,offset=2048,cipher=aes-xts-plain64,size=512
 EOF
@@ -432,12 +432,11 @@ EOF
 
   SYSTEM_12_POST_SCRIPT() {
     if [[ "$POST_script" == "true" ]] && ! [[ "$POST_install_script" == "NONE" ]]; then
-      export script_name_input=$(basename $POST_install_script)
-      export script_name=${script_name_input%.*}
+      export basename=$(basename $POST_install_script .git)
       if [[ "$REPLACE_sudo" == "true" ]]; then echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null;
       else echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null; fi
-      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$script_name"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
-      rm -rf /home/$USERNAME/$script_name
+      su -l "$USERNAME" -c "git clone https://$POST_install_script; cd "$basename"; chmod u+x "$POST_install_script_name"; bash "$POST_install_script_name""
+      rm -rf /home/$USERNAME/$basename
       if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
       else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
     fi
