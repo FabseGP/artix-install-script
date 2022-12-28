@@ -184,8 +184,8 @@
     else filesystem="bcachefs-tools"; fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    chrony-$INIT_choice booster zstd realtime-privileges efibootmgr base base-devel dosfstools git \
-                   iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware lld openmp upx optipng \
-                   $ucode $seat $network $su $filesystem $bootloader --ignore mkinitcpio
+                   iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware lld openmp $ucode $seat \
+                   $network $su $filesystem $bootloader --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
@@ -264,7 +264,7 @@ EOF
     cp configs/bash.bashrc /home/"$USERNAME"/.bashrc
     cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
     cp /install_script/configs/makepkg.conf /etc/makepkg.conf
-    if [[ "$core_count" -gt 1 ]]; then sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$core_count\"/g" /etc/makepkg.conf; fi
+    if [[ "$core_count" -gt 1 ]]; then sed -i 's/#MAKEFLAGS=.*/MAKEFLAGS=\"-j$core_count\"/' /etc/makepkg.conf; fi
 }
 
   SYSTEM_05_SUPERUSER() {
