@@ -1,0 +1,13 @@
+#!/bin/sh
+
+# Perform a btrfs scrub on the root filesystem
+  btrfs scrub start /
+  btrfs scrub start /home
+
+# Perform a btrfs balance on the root filesystem
+  btrfs balance start -dusage=10 -musage=5 --bg /
+  btrfs balance start -dusage=20 -musage=10 --bg /
+
+# Perform a btrfs balance on the home filesystem
+  btrfs balance start -dusage=10 -musage=5 --bg /home
+  btrfs balance start -dusage=20 -musage=10 --bg /home
