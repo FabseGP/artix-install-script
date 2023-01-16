@@ -129,7 +129,7 @@
   SCRIPT_07_CREATE_SUBVOLUMES_AND_MOUNT_PARTITIONS() {
     export UUID_1=$(blkid -s UUID -o value "$DRIVE_path_primary")
     export UUID_2=$(lsblk -no TYPE,UUID "$DRIVE_path_primary" | awk '$1=="part"{print $2}' | tr -d -)
-    mount -o noatime,compress-force=zstd:1,discard=async,autodefrag "$MOUNTPOINT" /mnt
+    mount -o noatime,compress-force=zstd,discard=async,autodefrag "$MOUNTPOINT" /mnt
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
         if ! [[ "${subvolumes[subvolume]}" == "@" ]]; then
@@ -141,7 +141,7 @@
       elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then bcachefs subvolume create "${subvolumes[subvolume]}"; fi
     done
     umount /mnt
-    mount "$MOUNTPOINT" -o noatime,compress-force=zstd:1,discard=async,autodefrag /mnt
+    mount "$MOUNTPOINT" -o noatime,compress-force=zstd,discard=async,autodefrag /mnt
     mkdir -p /mnt/{etc/pacman.d/hooks,.secret,home,btrbk_snapshots}
     for ((subvolume=0; subvolume<${#subvolumes[@]}; subvolume++)); do
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
@@ -160,8 +160,8 @@
     mount -o nodev,nosuid,noexec "$DRIVE_path_boot" /mnt/boot/efi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$HOME_partition" == "true" ]]; then
-        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount /dev/mapper/crypthome -o noatime,compress-force=zstd:1,discard=async,autodefrag /mnt/home;
-        else mount "$DRIVE_path_home" -o noatime,compress-force=zstd:1,discard=async,autodefrag /mnt/home; fi
+        if [[ "$ENCRYPTION_partitions" == "true" ]]; then mount /dev/mapper/crypthome -o noatime,compress-force=zstd,discard=async,autodefrag /mnt/home;
+        else mount "$DRIVE_path_home" -o noatime,compress-force=zstd,discard=async,autodefrag /mnt/home; fi
         mkdir /mnt/home/btrbk_snapshots
       fi
     elif [[ "$FILESYSTEM_primary_bcachefs" == "true" ]]; then echo "NOT READY"; fi
