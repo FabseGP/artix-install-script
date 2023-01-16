@@ -207,7 +207,10 @@ EOF
     cd "$BEGINNER_DIR" || exit
     cp -r -- * /mnt/install_script
     for ((function=0; function < "${#functions[@]}"; function++)); do
-      if [[ "${functions[function]}" == *"SYSTEM"* ]]; then export -f "${functions[function]}"; artix-chroot /mnt /bin/bash -c "${functions[function]}"; fi
+      if [[ "${functions[function]}" == *"SYSTEM"* ]]; then export -f "${functions[function]}";
+        if [[ "${functions[function]}" == *"SYSTEM_04_AUR" ]]; then
+        artix-chroot /mnt /usr/bin/runuser -u "$USERNAME "/bin/bash -c "${functions[function]}"; 
+        else artix-chroot /mnt /bin/bash -c "${functions[function]}"; fi; fi
     done
 }
 
@@ -254,9 +257,12 @@ EOF
 }
 
   SYSTEM_04_AUR() {
+    if [[ "$REPLACE_sudo" == "true" ]]; then echo "permit nopass $USERNAME" | tee -a /etc/doas.conf > /dev/null;
+    else echo ""$USERNAME" ALL=(ALL:ALL) NOPASSWD: ALL" | tee -a /etc/sudoers > /dev/null; fi
     cd /install_script/packages || exit
-    PARU="$(ls -- *paru-*)"
-    pacman -U --noconfirm $PARU
+    git clone https://aur.archlinux.org/paru-bin.git
+    cd paru-bin || exit
+    makepkg -si --noconfirm
     cd /install_script || exit
     cp configs/bash.bashrc /etc/bash.bashrc
     mkdir -p /home/"$USERNAME"
@@ -264,6 +270,10 @@ EOF
     cp configs/bash.bashrc /home/"$USERNAME"/.bashrc
     cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
     cp /install_script/configs/makepkg.conf /etc/makepkg.conf
+    paru --needed --noconfirm --useask -S ananicy-cpp-nosystemd ananicy-rules pacdiff-pacman-hook-git
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then paru --needed --useask --noconfirm -S btrbk; fi
+    if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
+    else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
 }
 
   SYSTEM_05_SUPERUSER() {
@@ -317,10 +327,6 @@ EOF
 
   SYSTEM_08_SNAPSHOTS() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
-      cd /install_script/packages || exit
-      BTRBK="$(ls -- *btrbk-*)"
-      pacman -U --noconfirm $BTRBK
-      cd /install_script || exit
       cp configs/btrbk.conf /etc/btrbk/btrbk.conf
       cp services/cron/daily/btrbk /etc/cron.daily
       cp services/cron/hourly/btrbk /etc/cron.hourly
@@ -380,9 +386,6 @@ EOF
     cd /install_script/packages || exit  
     if [[ "$REPLACE_sudo" == "true" ]]; then pacman -Rns --noconfirm sudo; fi
     if [[ "$REPLACE_elogind" == "true" ]]; then ELOGIND="$(ls -- *elogind-*)"; pacman -U --noconfirm $ELOGIND; pacman -S --noconfirm pam_rundir; fi
-    ANANICY="$(ls -- *ananicy-cpp-*)"
-    ANANICY_RULES="$(ls -- *ananicy-rules-*)"
-    pacman -U --noconfirm $ANANICY $ANANICY_RULES 
 }
 
   SYSTEM_11_MISCELLANEOUS() {
@@ -414,9 +417,6 @@ EOF
     cp scripts/{ranking-mirrors.sh,grub-update.sh} /usr/share/libalpm/scripts
     cp hooks/* /etc/pacman.d/hooks
     pacman -S --noconfirm artix-mirrorlist
-    cd /install_script/packages || exit
-    PACDIFF="$(ls -- *pacdiff-*)"
-    pacman -U --noconfirm $PACDIFF
     cd $BEGINNER_DIR || exit
     if [[ "$REPLACE_networkmanager" == "true" ]] && [[ "$REPLACE_elogind" == "true" ]]; then
       pacman -Syu --noconfirm polkit
