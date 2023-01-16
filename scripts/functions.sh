@@ -245,9 +245,9 @@ EOF
 
   SYSTEM_02_USERS() {
     echo "root:$ROOT_passwd" | chpasswd
-    useradd -m  -G "$USER_groups" "$USERNAME"
+    useradd -m -G "$USER_groups" -s /bin/bash "$USERNAME"
     if [[ "$REPLACE_elogind" == "true" ]]; then groupadd seatd; usermod -a -G seatd "$USERNAME"; fi
-    echo -e "$USER_passwd\n$USER_passwd\n" | passwd $USERNAME
+    echo "$USERNAME:$USER_password" | chpasswd
 }
 
   SYSTEM_03_ADDITIONAL_PACKAGES() {
