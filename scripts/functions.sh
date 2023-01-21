@@ -184,7 +184,7 @@
     else filesystem="bcachefs-tools"; fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    chrony-$INIT_choice booster zstd realtime-privileges efibootmgr base base-devel dosfstools git \
-                   iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware lld $ucode $seat $su \
+                   iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware mold $ucode $seat $su \
                    $network $filesystem $bootloader --ignore mkinitcpio
 }
 
