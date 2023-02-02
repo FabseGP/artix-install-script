@@ -170,7 +170,7 @@
       read -rp "Anything to modify? (1|1,2|A|N|RETURN TO START) " CONFIRM
       echo	
       if [[ "$CONFIRM" == "N" ]]; then
-	    if [[ "$1" == PARTITIONS_* ]]; then
+  	    if [[ "$1" == PARTITIONS_* ]]; then
           if [[ "$BOOT_size" == "" ]]; then
             PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR BOOT-PARTITION!"
             if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "OUTPUT_partitions_full";
@@ -186,12 +186,13 @@
           elif [[ "$HOME_partition" == "true" ]] && [[ "$HOME_size" == "NOT CHOSEN" ]]; then
             PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
             if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
-            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi; fi
+            else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi;
+          else CONFIRM_proceed="true"; fi
         elif [[ "$1" == "USERS" ]]; then
           if [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!"; PRINT_TABLE ',' "$OUTPUT_users";
-          elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users"; fi
+          elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users";
+          else CONFIRM_proceed="true"; fi
         else CONFIRM_proceed="true"; fi
-	
       elif [[ "$CONFIRM" == "RETURN TO START" ]]; then ./$(basename "$0") restart; exit 2;
       elif [[ "$CONFIRM" == "A" ]] || [[ "$CONFIRM" =~ [1-4,] ]]; then
         if [[ "$CONFIRM" == "A" ]]; then CONFIRM="1,2,3,4"; fi
