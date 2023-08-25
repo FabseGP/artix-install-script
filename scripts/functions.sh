@@ -180,12 +180,12 @@
     else network="networkmanager-$INIT_choice"; fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then 
       if [[ "$BOOTLOADER_choice" == "grub" ]]; then
-        filesystem="grub-btrfs"; fi
-    else filesystem="bcachefs-tools"; fi
+        filesystem_boot="grub-btrfs"; filesystem_snapshot="btrbk"; fi
+    else filesystem_boot="bcachefs-tools"; filesystem_snapshot="btrbk" fi
     basestrap /mnt $INIT_choice cronie-$INIT_choice cryptsetup-$INIT_choice iwd-$INIT_choice backlight-$INIT_choice \
                    chrony-$INIT_choice booster zstd realtime-privileges efibootmgr base base-devel dosfstools git \
                    iptables-nft pacman-contrib linux-zen linux-zen-headers linux-firmware mold pacman-static $ucode \
-                   $seat $su $network $filesystem $bootloader --ignore mkinitcpio
+                   $seat $su $network $filesystem_boot $filesystem_snapshot $bootloader --ignore mkinitcpio
 }
 
   SCRIPT_09_FSTAB_GENERATION() {
