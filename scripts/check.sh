@@ -8,7 +8,7 @@
       if ! [[ "$DRIVE_size" =~ ^[0-9]+$ ]]; then echo; PRINT_MESSAGE "Only numbers please!"; PROCEED="false"
       else 
         if [[ "$INPUT_type" == "BOOT" ]]; then
-          if [[ "$DRIVE_size" -lt "300" ]]; then echo; PRINT_MESSAGE "Minimum 300 MB is required for the boot-partition!"; echo; PROCEED="false"
+          if [[ "$DRIVE_size" -lt "500" ]]; then echo; PRINT_MESSAGE "Minimum 500 MB is required for the boot-partition!"; echo; PROCEED="false"
           else export BOOT_size=$DRIVE_size; PROCEED="true"; fi
         elif [[ "$INPUT_type" == "HOME" ]]; then
           if [[ "$DRIVE_size" -gt "$SIZE_cleaned" ]]; then PRINT_MESSAGE "Invalid size; bigger than whole drive!"; echo; PROCEED="false"            

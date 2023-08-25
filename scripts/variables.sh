@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
   # Drives and partitions + encryption
-  BOOT_size="300"
+  BOOT_size="500"
   BOOT_label="BOOT"
   RAM_size="$(($(free -g | grep Mem: | awk '{print $2}') + 1))"
   SWAP_size="$((RAM_size * 1000))"
