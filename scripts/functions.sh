@@ -168,8 +168,8 @@
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
-    if grep 'Intel' "/proc/cpuinfo"; then ucode="intel-ucode";
-    elif grep 'AMD' "/proc/cpuinfo"; then ucode="amd-ucode"; fi
+    if grep -q 'Intel' "/proc/cpuinfo"; then ucode="intel-ucode";
+    elif grep -q 'AMD' "/proc/cpuinfo"; then ucode="amd-ucode"; fi
     if [[ "$REPLACE_sudo" == "true" ]]; then su="opendoas";
     else su="sudo"; fi
     if [[ "$BOOTLOADER_choice" == "refind" ]]; then bootloader="refind";
