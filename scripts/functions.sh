@@ -91,15 +91,15 @@
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
       if [[ "$ENCRYPTION_partitions" == "true" ]]; then
         if [[ "$HOME_partition" == "true" ]]; then
-          echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_home"
-          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_home" crypthome
+          echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --key-size 512 --hash sha512 "$DRIVE_path_home"
+          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --perf-no_write_workqueue --persistent "$DRIVE_path_home" crypthome
           mkfs.btrfs -f -L "$HOME_label" /dev/mapper/crypthome
           mkfs.btrfs -f -L "$PRIMARY_label" "$DRIVE_path_primary"
           MOUNTPOINT="$DRIVE_path_primary"
 		      export UUID_home=$(blkid -s UUID -o value "$DRIVE_path_home")
         else
-          echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --pbkdf pbkdf2 --cipher aes-xts-plain64 --key-size 512 --hash sha512 --use-random "$DRIVE_path_primary" # GRUB currently lacks support for ARGON2d
-          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --size 4196 --persistent "$DRIVE_path_primary" cryptroot
+          echo "$ENCRYPTION_passwd" | cryptsetup luksFormat --batch-mode --type luks2 --key-size 512 --hash sha512 "$DRIVE_path_primary"
+          echo "$ENCRYPTION_passwd" | cryptsetup open --allow-discards --perf-no_read_workqueue --perf-no_write_workqueue --persistent "$DRIVE_path_primary" cryptroot
           mkfs.btrfs -f -L "$PRIMARY_label" /dev/mapper/cryptroot
           MOUNTPOINT="/dev/mapper/cryptroot"
         fi
@@ -270,7 +270,7 @@ EOF
     cp configs/bash.bashrc /home/"$USERNAME"/.bashrc
     cp /install_script/configs/paru.conf /etc/paru.conf # Links sudo to doas + more
     cp /install_script/configs/makepkg.conf /etc/makepkg.conf
-    paru --needed --noconfirm --useask -S ananicy-cpp-nosystemd ananicy-rules pacdiff-pacman-hook-git
+    paru --needed --noconfirm --useask -S ananicy-cpp-nosystemd ananicy-rules-git pacdiff-pacman-hook-git
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then paru --needed --useask --noconfirm -S btrbk; fi
     if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
     else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
@@ -347,7 +347,7 @@ EOF
       if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
         sed -i 's/rootflags=subvol=${rootsubvol}//' /etc/grub.d/20_linux_xen  
         if [[ "$ENCRYPTION_partitions" == "true" ]] && ! [[ "$HOME_partition" == "true" ]]; then	
-          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
+          sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ rd.luks.name='"$UUID_1"'=cryptroot\ root=\/dev\/mapper\/cryptroot\ rd.luks.allow-discards\ rd.luks.key=\/.secret\/crypto-keyfile.bin"/' /etc/default/grub
           sed -i 's/GRUB_PRELOAD_MODULES="part_gpt part_msdos"/GRUB_PRELOAD_MODULES="part_gpt\ part_msdos\ luks2"/' /etc/default/grub
           sed -i -e "/GRUB_ENABLE_CRYPTODISK/s/^#//" /etc/default/grub
           grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
@@ -370,12 +370,12 @@ EOF
         grub-mkconfig -o /boot/grub/grub.cfg
       fi
       if ! [[ "$ENCRYPTION_partitions" == "true" ]]; then
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1"/' /etc/default/grub
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         grub-mkconfig -o /boot/grub/grub.cfg
       fi
       if [[ "$ENCRYPTION_partitions" == "true" ]] && [[ "$HOME_partition" == "true" ]]; then
-        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog\ nvme.noacpi=1"/' /etc/default/grub
+        sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet"/GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3\ quiet\ splash\ nowatchdog"/' /etc/default/grub
         grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id="$BOOTLOADER_label"
         grub-mkconfig -o /boot/grub/grub.cfg
       fi
@@ -424,7 +424,6 @@ EOF
     touch /etc/{sysctl.conf,sysfs.conf}
     cat << EOF | tee -a /etc/sysctl.conf > /dev/null
 vm.swappiness = 30
-vm.vfs_cache_pressure = 50
 
 EOF
 }
