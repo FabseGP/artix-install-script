@@ -308,7 +308,7 @@ EOF
 wifi.backend=iwd
 EOF
     fi
-    for service in $network_manager cronie backlight chronyd; do
+    for service in $network_manager cronie backlight chronyd iwd; do
       if [[ "$INIT_choice" == "dinit" ]]; then ln -s /etc/dinit.d/$service /etc/dinit.d/boot.d;
       elif [[ "$INIT_choice" == "runit" ]]; then ln -s /etc/runit/sv/$service /etc/runit/runsvdir/default;
       elif [[ "$INIT_choice" == "openrc" ]]; then rc-update add $service; fi
