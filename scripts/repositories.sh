@@ -15,6 +15,7 @@
     cp /install_script/configs/pacman_with_arch.conf /etc/pacman.conf
     pacman -Sy
   else 
+    cp configs/pacman_without_arch.conf /etc/pacman.conf
     pacman -Syy --noconfirm artix-archlinux-support
     pacman-key --init
     pacman-key --populate archlinux artix
