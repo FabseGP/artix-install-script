@@ -182,7 +182,7 @@
             PRINT_MESSAGE "PLEASE CHOOSE A SIZE FOR YOUR HOME-PARTITION!"
             if [[ "$HOME_partition" == "true" ]]; then PRINT_TABLE ',' "$OUTPUT_partitions_full";
             else PRINT_TABLE ',' "$OUTPUT_partitions_without_home"; fi;
-          else CONFIRM_proceed="true"; fi; fi
+          else CONFIRM_proceed="true"; fi
         elif [[ "$1" == "USERS" ]]; then
           if [[ "$ROOT_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CHOOSE A PASSWORD FOR ROOT!"; PRINT_TABLE ',' "$OUTPUT_users";
           elif [[ "$USER_passwd" == "NOT CHOSEN" ]]; then PRINT_MESSAGE "PLEASE CONFIGURE YOUR REGULAR USER!"; PRINT_TABLE ',' "$OUTPUT_users"
