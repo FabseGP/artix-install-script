@@ -14,7 +14,7 @@
           if [[ "$DRIVE_size" -gt "$SIZE_cleaned" ]]; then PRINT_MESSAGE "Invalid size; bigger than whole drive!"; echo; PROCEED="false"            
           else export HOME_size=$DRIVE_size; PROCEED="true"; fi
         elif [[ "$INPUT_type" == "SWAP" ]]; then
-          export SIZE_megabytes=$((DRIVE_size * 1000)); export SWAP_size=$((SIZE_megabytes+BOOT_size)); PROCEED="true"; fi
+          export SWAP_size=$DRIVE_size; PROCEED="true"; fi
       fi
     else PROCEED="true"; fi
 }

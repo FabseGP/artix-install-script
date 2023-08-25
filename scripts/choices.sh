@@ -55,7 +55,7 @@
   UPDATE_CHOICES() {
     read -r -d '' OUTPUT_partitions_full << EOM
 $PARTITIONS_full
-SIZE:,$BOOT_size MB,$HOME_size GB,$PRIMARY_size GB,$SWAP_size MB
+SIZE:,$BOOT_size MB,$HOME_size GB,$PRIMARY_size GB,$SWAP_size GB
 LABEL:,$BOOT_label,$HOME_label,$PRIMARY_label,$SWAP_label
 ENCRYPTION-password:,,,$ENCRYPTION_passwd
 EOM

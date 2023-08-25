@@ -57,8 +57,8 @@
         parted --script -a optimal "$DRIVE_path" \
           mklabel gpt \
           mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
-          mkpart HOME "$SWAP_size"MiB "$HOME_size"GiB \
+          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"GiB \
+          mkpart HOME "$SWAP_size"GiB "$HOME_size"GiB \
           mkpart PRIMARY "$HOME_size"GiB 100% 
 	  else
         parted --script -a optimal "$DRIVE_path" \
@@ -71,8 +71,8 @@
         parted --script -a optimal "$DRIVE_path" \
           mklabel gpt \
           mkpart BOOT fat32 1MiB "$BOOT_size"MiB set 1 ESP on \
-          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"MiB \
-          mkpart PRIMARY "$SWAP_size"MiB 100% 
+          mkpart SWAP linux-swap "$BOOT_size"MiB "$SWAP_size"GiB \
+          mkpart PRIMARY "$SWAP_size"GiB 100% 
 	  else
         parted --script -a optimal "$DRIVE_path" \
           mklabel gpt \
