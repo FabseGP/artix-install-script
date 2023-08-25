@@ -327,6 +327,7 @@ EOF
 
   SYSTEM_08_SNAPSHOTS() {
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then
+      cd /install_script || exit
       cp configs/btrbk.conf /etc/btrbk/btrbk.conf
       cp services/cron/daily/btrbk /etc/cron.daily
       cp services/cron/hourly/btrbk /etc/cron.hourly
