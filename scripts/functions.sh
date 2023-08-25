@@ -168,8 +168,8 @@
 }	
  
   SCRIPT_08_BASESTRAP_PACKAGES() {         
-    if grep -q Intel "/proc/cpuinfo"; then ucode="intel-ucode";
-    elif grep -q AMD "/proc/cpuinfo"; then ucode="amd-ucode"; fi
+    if grep 'Intel' "/proc/cpuinfo"; then ucode="intel-ucode";
+    elif grep 'AMD' "/proc/cpuinfo"; then ucode="amd-ucode"; fi
     if [[ "$REPLACE_sudo" == "true" ]]; then su="opendoas";
     else su="sudo"; fi
     if [[ "$BOOTLOADER_choice" == "refind" ]]; then bootloader="refind";
@@ -413,7 +413,7 @@ EOF
       cp services/dinit/ananicy/ananicy-cpp-dinit /etc/dinit.d/ananicy-cpp
       ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
     fi
-    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then cp services/cron/weekly/btrfs_health /etc/cron.weekly; fi
+    if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then cp services/cron/monthly/btrfs_health /etc/cron.monthly; fi
     cp scripts/{ranking-mirrors.sh,grub-update.sh} /usr/share/libalpm/scripts
     cp hooks/* /etc/pacman.d/hooks
     pacman -S --noconfirm artix-mirrorlist
