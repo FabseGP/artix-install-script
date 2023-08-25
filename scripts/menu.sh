@@ -127,13 +127,8 @@
                     fi
                   fi 	  	   	  	
                 done
-                SIZE_decimal=$(df -h --output=size "$DRIVE_path")
-                SIZE_integer=$(awk -v v="$SIZE_decimal" 'BEGIN{printf "%d", v}')        
-                ARRAY_string="$SIZE_integer"
-                IFS=' '
-                SIZE_array=( $ARRAY_string )
-                SIZE_extracted=$(echo "${SIZE_array[1]}")
-                SIZE_cleaned=$(echo "${SIZE_extracted//G}")
+                SIZE_decimal=$(lsblk --output SIZE -n -d "$DRIVE_path")
+                SIZE_cleaned=$(awk -v v="$SIZE_decimal" 'BEGIN{printf "%d", v}')        
                 PROCEED="true"
               fi
             fi
