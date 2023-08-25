@@ -241,7 +241,7 @@
                   fi
                 else
                   if [[ "$SWAP_partition" == "true" ]]; then
-                    until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
+                    until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size in GB (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
                     PROCEED="false"
                     until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition label (leave empty for default): " DRIVE_label; LABEL_check SWAP; done
                     PROCEED="false"
@@ -250,7 +250,7 @@
                 ;;
               4)
                 if [[ "$HOME_partition" == "true" ]] && [[ "$SWAP_partition" == "true" ]]; then
-                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
+                  until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition size in GB (leave empty for default): " DRIVE_size; SIZE_check SWAP; done
                   PROCEED="false"
                   until [[ "$PROCEED" == "true" ]]; do read -rp "SWAP-partition label (leave empty for default): " DRIVE_label; LABEL_check SWAP; done
                   PROCEED="false"
