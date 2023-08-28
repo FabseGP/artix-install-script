@@ -269,8 +269,11 @@ EOF
     chown -R "$USERNAME": /home/"$USERNAME"
     cp configs/bash.bashrc /home/"$USERNAME"/.bashrc
     cp configs/paru.conf /etc/paru.conf # Links sudo to doas + more
-    cp onfigs/makepkg.conf /etc/makepkg.conf
-    paru --needed --noconfirm --useask -S ananicy-cpp-nosystemd ananicy-rules-git pacdiff-pacman-hook-git
+    cp configs/makepkg.conf /etc/makepkg.conf
+    cd /install_script/packages || exit
+    paru --needed --noconfirm --useask -S ananicy-rules-git pacdiff-pacman-hook-git
+    ANANICY="$(ls -- *-ananicy-*)"
+    pacman --noconfirm -U $ANANICY
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then paru --needed --useask --noconfirm -S btrbk; fi
     if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
     else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
