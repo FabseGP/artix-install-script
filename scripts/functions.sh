@@ -271,9 +271,7 @@ EOF
     cp configs/paru.conf /etc/paru.conf # Links sudo to doas + more
     cp configs/makepkg.conf /etc/makepkg.conf
     cd /install_script/packages || exit
-    paru --needed --noconfirm --useask -S ananicy-rules-git pacdiff-pacman-hook-git
-    ANANICY="$(ls -- *-ananicy-*)"
-    pacman --noconfirm -U $ANANICY
+    paru --needed --noconfirm --useask -S pacdiff-pacman-hook-git
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then paru --needed --useask --noconfirm -S btrbk; fi
     if [[ "$REPLACE_sudo" == "true" ]]; then sed -i "/permit nopass $USERNAME/d" /etc/doas.conf;
     else sed -i "/$USERNAME ALL=(ALL) NOPASSWD: ALL/d" /etc/sudoers; fi
@@ -406,16 +404,8 @@ EOF
       sed -i 's/#rc_parallel="NO"/rc_parallel="YES"/g' /etc/rc.conf
       sed -i 's/#unicode="NO"/unicode="YES"/g' /etc/rc.conf
       sed -i 's/#rc_depend_strict="YES"/rc_depend_strict="NO"/g' /etc/rc.conf
-      cp services/openrc/ananicy/ananicy-cpp-openrc /etc/init.d/ananicy-cpp
-      ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
-      rc-update add ananicy-cpp
     elif [[ "$INIT_choice" == "runit" ]]; then
-      mkdir /etc/runit/sv/ananicy-cpp
-      cp services/runit/ananicy/* /etc/runit/sv/ananicy-cpp
-      ln -s /etc/runit/sv/ananicy-cpp /etc/runit/runsvdir/default
     elif [[ "$INIT_choice" == "dinit" ]]; then
-      cp services/dinit/ananicy/ananicy-cpp-dinit /etc/dinit.d/ananicy-cpp
-      ln -s /etc/dinit.d/ananicy-cpp /etc/dinit.d/boot.d
     fi
     if [[ "$FILESYSTEM_primary_btrfs" == "true" ]]; then cp services/cron/monthly/btrfs_health /etc/cron.monthly; fi
     cp scripts/{ranking-mirrors.sh,grub-update.sh} /usr/share/libalpm/scripts
