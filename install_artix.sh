@@ -66,9 +66,9 @@
     SIZE_integer=$(awk -v v="$SIZE_decimal" 'BEGIN{printf "%d", v}')        
     ARRAY_string="$SIZE_integer"
     IFS=' '
-    SIZE_array=( $ARRAY_string )
-    SIZE_extracted=$(echo "${SIZE_array[1]}")
-    SIZE_cleaned=$(echo "${SIZE_extracted//G}")      
+    SIZE_array=( "$ARRAY_string" )
+    SIZE_extracted=$("${SIZE_array[1]}")
+    SIZE_cleaned=$("${SIZE_extracted//G}")      
   fi
 
   # Executing functions

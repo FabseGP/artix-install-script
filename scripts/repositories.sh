@@ -1,6 +1,5 @@
 #!/usr/bin/bash
 
-  BEGINNER_DIR=$(pwd)
   if [[ "$(find /install_script/configs -name paru.conf)" ]]; then
     cp /install_script/configs/pacman_without_arch.conf /etc/pacman.conf
     pacman -Sy --noconfirm artix-keyring
@@ -11,7 +10,6 @@
     pacman -Sy --noconfirm artix-archlinux-support
     pacman-key --init
     pacman-key --populate archlinux artix
-    cd /install_script/packages
     cp /install_script/configs/pacman_with_arch.conf /etc/pacman.conf
     pacman -Sy
   else 

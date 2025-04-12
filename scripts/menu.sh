@@ -80,8 +80,7 @@
               COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
               if [[ "$COUNT_init" -gt "0" ]] && [[ "$active" == @(5|6|7) ]]; then eval selected[{5..7}]=false; toggle_option $active
               elif [[ "$COUNT_bootloader" -gt "0" ]] && [[ "$active" == @(8|9) ]]; then eval selected[{8..9}]=false; toggle_option $active
-              elif [[ "$BCACHEFS_implemented" == "true" ]] && [[ "$COUNT_filesystem" -eq 1 ]] && [[ "$active" == @(0|1) ]]; then eval selected[{0..1}]=false; toggle_option $active
-              elif [[ "$BCACHEFS_implemented" == "false" ]] && [[ "$active" == @(0|1)	 ]]; then :;
+              elif [[ "$COUNT_filesystem" -gt "0" ]] && [[ "$active" == @(0|1) ]]; then eval selected[{0..1}]=false; toggle_option $active
               else toggle_option $active; fi
             elif [[ "${options[0]}" == "DRIVE_SELECTION" ]]; then
               DRIVES="$((${#options[@]} - 2))" 
@@ -98,7 +97,7 @@
               export COUNT_intro="${#selected[@]}"
               export values=("${selected[@]}")
               export COUNT_init=$(grep -o true <<< "${selected[@]:5:7}" | wc -l)
-              export COUNT_filesystem=$(grep -o true <<< "${selected[@]:0:2}" | wc -l)
+              export COUNT_filesystem=$(grep -o true <<< "${selected[@]:1:2}" | wc -l)
               export COUNT_bootloader=$(grep -o true <<< "${selected[@]:8:9}" | wc -l)
               if [[ "$COUNT_init" == "0" ]] && [[ "$COUNT_filesystem" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[4]}";
               elif [[ "$COUNT_init" == "0" ]]; then WRONG="true"; echo; PRINT_MESSAGE "${messages[5]}";
